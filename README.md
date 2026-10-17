@@ -51,6 +51,17 @@ curl -X POST localhost:8000/investigate -H "Authorization: Bearer $TOKEN" -H "Co
 ```
 `copilot ask` defaults `as_of` to the end of the last `simgen` run (`data/simgen_run.json`) so "yesterday" refers to the generated data; the HTTP API defaults to now, so pass `"as_of"` explicitly when the data was generated on an earlier day.
 
+## Web UI
+```bash
+cd services/ai-svc
+uv run copilot serve --dev        # http://127.0.0.1:8000 ; --dev enables demo tokens per plant (local only)
+```
+![Incident copilot UI: Pump 12 bearing temperature alarm](docs/img/ui-demo.jpg)
+
+Pick a plant, ask a question (or click an example), choose *Evidence only* (instant) or *Language
+model* (about a minute on a 4 GB GPU). Clarifications appear as buttons; O#/D# chips jump to the
+observation or the procedure text. Without `--dev`, paste a token from `copilot devtoken`.
+
 ## Evaluation
 ```bash
 cd services/ai-svc

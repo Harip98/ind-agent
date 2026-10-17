@@ -103,7 +103,9 @@ uv project, package `copilot`, FastAPI.
 | Endpoint | Purpose |
 |---|---|
 | `POST /investigate` | Run an investigation. Body `{question, as_of?, mode?: "llm" \| "template", strategy?}` |
-| `GET /healthz` | Liveness + Ollama / data-svc / DB reachability |
+| `GET /healthz` | Liveness |
+| `GET /`, `/static/*` | Web UI (vanilla JS + Chart.js, renders server data with `textContent` only) |
+| `GET /dev/defaults`, `POST /dev/token` | Demo helpers, 404 unless `copilot serve --dev` (127.0.0.1 only) |
 
 CLI (`copilot …`): `simgen`, `ingest`, `devtoken`, `ask`, `eval`.
 

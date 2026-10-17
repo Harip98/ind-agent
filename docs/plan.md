@@ -106,7 +106,7 @@ Exit criteria
 - `eval/reports/<date>-dev.md` and `<date>-test.md` generated.
 - **Cross-tenant leakage = 0** (hard gate; any leak blocks the milestone).
 
-## M5 — Thin web UI
+## M5 — Thin web UI ✅ (2026-10-17)
 
 **Goal:** a demoable page.
 
