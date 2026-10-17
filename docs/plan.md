@@ -6,7 +6,7 @@ Detailed task-level plans per milestone live in [plans/](plans/).
 Each milestone ends with its exit criteria passing and a commit. Milestones are sequential;
 M6 is optional.
 
-## M0 — Foundations
+## M0 — Foundations ✅ (2026-10-17)
 
 **Goal:** a reproducible skeleton that boots and contains synthetic data.
 
