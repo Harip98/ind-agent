@@ -17,5 +17,17 @@ services:
       timeout: 3s
       retries: 20
 
+  data-svc:
+    build: ./services/data-svc
+    environment:
+      DATASVC_ADDR: ":8081"
+      DATASVC_DB_DSN: "host=postgres port=5432 dbname=indagent user=ops_reader password=${COPILOT_OPS_READER_PASSWORD:-ops_reader_dev_pw}"
+      COPILOT_JWT_SECRET: ${COPILOT_JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:

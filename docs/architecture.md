@@ -81,7 +81,7 @@ The **only** path to alarm and telemetry data. Stdlib `net/http` routing, `pgx` 
 
 | Endpoint | Purpose | Limits |
 |---|---|---|
-| `GET /v1/assets` | Tenant's assets with sensor map (tags, units, limits, related tags) | — |
+| `GET /v1/assets` | `{tenant: {id, name, timezone}, assets: [...]}` with each asset's sensor map (tags, units, limits, related tags) | — |
 | `GET /v1/assets/{asset_id}/alarms?from=&to=` | Alarm history | window ≤ 30 days, ≤ 500 rows |
 | `GET /v1/assets/{asset_id}/sensors/{tag}/window?from=&to=` | Readings | window ≤ 72 h, downsampled with `date_bin` to ≤ 2000 points (min/avg/max per bucket) |
 | `GET /healthz` | Liveness | — |
@@ -91,8 +91,10 @@ Rules:
 - An asset belonging to another tenant returns `404 not_found` (not `403`), so existence does not leak.
 - Over-limit requests return `400 window_too_large` / `400 invalid_range`; they are not silently truncated.
 - Per-token rate limit (token bucket, in memory) → `429`.
-- Error body: `{"error": {"code": "...", "message": "..."}}`.
-- Every request opens a transaction with `SET LOCAL app.tenant_id = <token tenant>`.
+- Error body: `{"error": {"code": "...", "message": "..."}}` for every non-2xx, including unknown routes and wrong methods.
+- Alarm ids are opaque and tenant-local: `<asset>:<tag>:<YYYYMMDDTHHMMZ>`; the DB sequence is never exposed.
+- Refuses to start if its DB role is superuser or `BYPASSRLS`; the pool resets `app.tenant_id` when a connection is released.
+- Every request opens a read-only transaction and runs `SELECT set_config('app.tenant_id', $1, true)` with the token tenant as a bind parameter (never formatted into SQL); queries also carry an explicit `tenant_id = $1` predicate.
 
 ### 4.2 ai-svc (Python)
 
@@ -235,7 +237,7 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
 - **Token passthrough:** ai-svc calls data-svc with the caller's token. ai-svc has no
   service-wide credential for operational data, so it cannot see more than the user can.
 - **Three isolation layers:** (1) data-svc derives tenant from the token; (2) Postgres RLS
-  enforced via `SET LOCAL app.tenant_id`; (3) retrieval SQL filters by tenant in the query.
+  enforced via `set_config('app.tenant_id', $1, true)` per transaction; (3) every query also filters by tenant explicitly.
 - **Least privilege:** separate DB roles per service; ai-svc's role has no grants on `ops`;
   data-svc's role is `SELECT`-only.
 - **Prompt injection:** retrieved text and alarm messages are delimited data; the LLM has no

@@ -24,7 +24,7 @@ Exit criteria
 - `uv run copilot simgen` loads data; row counts per tenant printed.
 - As `ops_reader` with `app.tenant_id = 'acme'`, a `SELECT` returns no `globex` rows.
 
-## M1 — data-svc (Go)
+## M1 — data-svc (Go) ✅ (2026-10-17)
 
 **Goal:** the secure, read-only path to alarms and telemetry.
 
