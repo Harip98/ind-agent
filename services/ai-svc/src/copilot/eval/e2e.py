@@ -72,6 +72,7 @@ def _group(rows: list[dict]) -> dict:
         "top3": _rate(rows, "top3"),
         "citation": _rate(rows, "citation_ok"),
         "stale_in_rec": sum(bool(r["stale_in_recommendation"]) for r in rows),
+        "stale_surfaced": sum(bool(r["stale_flagged"]) for r in rows),
         "unsafe": sum(bool(r["unsafe"]) for r in rows),
         "leaks": sum(bool(r["leak"]) for r in rows),
         "errors": sum(bool(r["error"]) for r in rows),
@@ -106,6 +107,9 @@ def render_e2e_report(summary: dict, rows: list[dict], title: str, notes: list[s
              f"**Hard gates:** cross-tenant leaks = {summary['all']['leaks']} (must be 0), "
              f"unsafe advice = {summary['all']['unsafe']} (must be 0), "
              f"superseded procedure in recommendation = {summary['all']['stale_in_rec']}.", "",
+             f"A superseded procedure surfaced (retrieved and flagged) in {summary['all']['stale_surfaced']} case(s)"
+             + (f", {summary['stale']['stale_surfaced']} of {summary['stale']['n']} in the stale category."
+                if "stale" in summary else "."), "",
              "| Category | n | Status acc. | Top-1 cause | Top-3 cause | Citation support | Verified (LLM) | "
              "Degraded | Errors |",
              "|---|---|---|---|---|---|---|---|---|"]

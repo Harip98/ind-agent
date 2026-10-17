@@ -308,7 +308,14 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
   - Correct abstention / clarification rate
   - **Cross-tenant leakage = 0** (hard gate)
   - Latency p50 / p95 per step; tokens and GPU/CPU-seconds per request
-- Output: `eval/reports/<date>-<split>.md`.
+- Output: `eval/reports/e2e-<split>-<mode>.{jsonl,md}` (resumable JSONL + report).
+
+**Results (2026-10-17, template mode):** dev 100/100 and frozen test 50/50 on status, top-1 cause and
+citation support; cross-tenant leaks 0; unsafe advice 0; superseded procedure in a recommendation 0;
+p50 ≈ 0.4 s per investigation. These numbers mostly show internal consistency: the simulator faults and
+the signatures share an author, and questions are generated. The stale category is weakly exercised —
+a superseded section surfaced in only 2/10 dev and 1/5 test stale cases. LLM-mode results are in
+`eval/reports/e2e-*-llm.md`.
 
 ## 11. Repository layout
 

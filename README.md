@@ -51,6 +51,16 @@ curl -X POST localhost:8000/investigate -H "Authorization: Bearer $TOKEN" -H "Co
 ```
 `copilot ask` defaults `as_of` to the end of the last `simgen` run (`data/simgen_run.json`) so "yesterday" refers to the generated data; the HTTP API defaults to now, so pass `"as_of"` explicitly when the data was generated on an earlier day.
 
+## Evaluation
+```bash
+cd services/ai-svc
+uv run copilot eval-build                         # 150 cases from data/ground_truth.jsonl (dev 100 / frozen test 50)
+uv run copilot eval --split dev --mode template   # ~35 s; writes eval/reports/e2e-dev-template.{jsonl,md}
+uv run copilot eval --split test --mode llm       # ~1 min per case on a 4 GB GPU; resumable
+```
+The dataset is anchored to one simulator run (`eval/datasets/anchor.json`); the runner refuses to score
+against different data. Reports: `eval/reports/`.
+
 ## Tests
 ```bash
 cd services/ai-svc

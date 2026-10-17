@@ -55,6 +55,7 @@ def test_summary_and_report(sim, tmp_path):
     s = summarize(rows)
     assert s["all"]["n"] == 3 and s["all"]["status_acc"] == 1.0 and s["all"]["leaks"] == 0
     assert s["normal"]["top1"] == 1.0 and s["missing_evidence"]["top1"] is None
+    assert s["all"]["stale_surfaced"] == 0
     md = render_e2e_report(s, rows, "Test report", ["note one"])
-    assert "| normal |" in md and "note one" in md and "p95" in md
+    assert "| normal |" in md and "note one" in md and "p95" in md and "superseded procedure surfaced" in md
     json.dumps(s)
