@@ -91,7 +91,7 @@ Exit criteria
 - `globex` token asking about Pump 12 → same response as an unknown asset.
 - With Ollama stopped, `mode=template` still returns a report.
 
-## M4 — Evaluation (template mode ✅ 2026-10-17; LLM-mode runs and human review of questions pending)
+## M4 — Evaluation (✅ template 2026-10-17, LLM test split 2026-10-18; human review of questions and the 20-answer spot check pending)
 
 **Goal:** credible, reproducible numbers.
 
@@ -119,7 +119,9 @@ Tasks
 Exit criteria
 - Demo script in README works end to end in the browser for both tenants.
 
-## M6 — Agent-loop experiment (optional)
+## M6 — Agent-loop experiment (optional) ✅ (2026-10-18)
+
+Result: the agent reached the expected outcome in 8/60 test cases, against 45/60 for the pipeline with the same 3B model. Report: `eval/reports/2026-10-18-agent-vs-pipeline.md`. The pipeline stays the design.
 
 **Goal:** evidence for or against an autonomous agent on this hardware.
 

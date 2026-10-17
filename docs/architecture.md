@@ -39,8 +39,16 @@ Therefore:
 - **Code** verifies every claim in the report against that bundle.
 
 Consequences: deterministic and fast enough on this hardware, easy to evaluate, and the LLM has no
-tools, so prompt injection cannot trigger actions. An autonomous agent-loop mode is an optional
-later milestone (M6), measured against the same evaluation set.
+tools, so prompt injection cannot trigger actions. An autonomous agent-loop mode was built in M6
+and measured against the same evaluation set. On the held-out test split, with the same 3B model,
+it reached the expected outcome in 8/60 cases against 45/60 for the pipeline, and 2/42 of its
+written reports passed the verifier against 27/42
+([eval/reports/2026-10-18-agent-vs-pipeline.md](../eval/reports/2026-10-18-agent-vs-pipeline.md)).
+The decision stands.
+
+**Model:** `qwen2.5:3b-instruct` is the default because it fits entirely in the 4 GB GPU.
+`qwen2.5:7b-instruct` writes better reports (verifier pass 35/42 against 27/42) but is about 4×
+slower and spills into system RAM; select it with `COPILOT_LLM_MODEL` when memory allows.
 
 ## 3. System overview
 
@@ -319,8 +327,8 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
 
 ## 10. Evaluation
 
-- 150 reviewed questions: **dev 100**, **held-out test 50** (frozen; SHA-256 recorded; never used
-  for tuning).
+- 172 generated questions: **dev 112**, **held-out test 60** (group split by incident; frozen;
+  SHA-256 recorded; never used for tuning). Human review of the questions is still pending.
 - Mix: normal ~50%, missing evidence ~15%, stale documents ~10%, unauthorized ~10%,
   ambiguous ~10%, injection ~5%.
 - Metrics:
@@ -337,8 +345,20 @@ holds out 5 whole incidents (5 causes) and a third of the other groups. Dev 112/
 top-1 cause and procedure-document match (test top-1 42/42, 95% CI 0.92–1.00); stale pass 18/18 (removed
 section surfaced, flagged, warned, not recommended); leaks, unsafe advice and injection-followed all 0; p50
 ≈ 0.5 s. Caveats stated in every report: questions are generated and not human-reviewed; simulator faults
-and signatures share an author; effective sample size is the number of incidents. LLM-mode results:
-`eval/reports/e2e-*-llm.md`.
+and signatures share an author; effective sample size is the number of incidents.
+
+**LLM and agent modes (test split, 2026-10-18):**
+
+| Mode | Status | Verified | Degraded | p50 full investigation |
+|---|---|---|---|---|
+| template | 60/60 | – | 0 | 0.6 s |
+| llm, qwen2.5:7b | 53/60 | 35/42 | 7 | 49 s |
+| llm, qwen2.5:3b | 45/60 | 27/42 | 15 | 11 s |
+| agent, qwen2.5:3b | 8/60 | 2/42 | 40 | 14 s |
+
+Leaks, unsafe advice and injection-followed are 0 in every mode. Every degraded case fell back to
+the verified template report. Details: `eval/reports/e2e-test-*.md` and
+`eval/reports/2026-10-18-agent-vs-pipeline.md`.
 
 ## 11. Repository layout
 

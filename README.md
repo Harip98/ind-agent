@@ -9,7 +9,8 @@ Design: [docs/architecture.md](docs/architecture.md) · Plan: [docs/plan.md](doc
 - Docker Desktop (running)
 - [uv](https://docs.astral.sh/uv/) — installs Python 3.12 for the project
 - Go 1.25+
-- Ollama (used from M2 onwards)
+- Ollama with `nomic-embed-text` and `qwen2.5:3b-instruct` (`ollama pull ...`). The 3B fits a 4 GB GPU;
+  set `COPILOT_LLM_MODEL=qwen2.5:7b-instruct` in `.env` for better reports if you have the memory.
 
 ## Setup
 ```bash
@@ -59,7 +60,7 @@ uv run copilot serve --dev        # http://127.0.0.1:8000 ; --dev enables demo t
 ![Incident copilot UI: Pump 12 bearing temperature alarm](docs/img/ui-demo.jpg)
 
 Pick a plant, ask a question (or click an example), choose *Evidence only* (instant) or *Language
-model* (about a minute on a 4 GB GPU). Clarifications appear as buttons; O#/D# chips jump to the
+model* (10–20 s with qwen2.5:3b on a 4 GB GPU). Clarifications appear as buttons; O#/D# chips jump to the
 observation or the procedure text. Without `--dev`, paste a token from `copilot devtoken`.
 
 ## Evaluation
@@ -67,8 +68,8 @@ observation or the procedure text. Without `--dev`, paste a token from `copilot 
 cd services/ai-svc
 uv run copilot eval-build                         # 172 cases from data/ground_truth.jsonl (dev 112 / frozen test 60)
 uv run copilot eval --split dev --mode template   # ~35 s; writes eval/reports/e2e-dev-template.{jsonl,md}
-uv run copilot eval --split test --mode llm       # ~1 min per case on a 4 GB GPU; resumable
-uv run copilot eval --split test --mode agent     # M6: the LLM drives the tools itself; 1-3 min per case
+uv run copilot eval --split test --mode llm       # ~10 s per case with qwen2.5:3b (~50 s with the 7B); resumable
+uv run copilot eval --split test --mode agent     # M6: the LLM drives the tools itself; ~15 s per case
 uv run copilot eval-compare --split test          # one table: template vs llm vs agent
 ```
 The dataset is anchored to one simulator run (`eval/datasets/anchor.json`); the runner refuses to score

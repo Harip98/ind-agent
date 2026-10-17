@@ -110,7 +110,7 @@ async function ask(extra = {}, modeOverride = null) {
   const mode = modeOverride || $("mode").value;
   const seq = ++state.seq;
   setBusy(true);
-  notice(mode === "llm" ? "Investigating. The language model writes the report locally; this takes about a minute."
+  notice(mode === "llm" ? "Investigating. The language model writes the report locally; this takes 10–20 seconds."
                         : "Investigating…");
   try {
     const body = { question, mode, as_of: $("as-of").value.trim() || null, ...extra };
