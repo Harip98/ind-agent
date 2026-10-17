@@ -234,3 +234,54 @@ def eval_build() -> None:
     dev, test = split_cases(build_cases(gt, anchor))
     write_dataset(dev, test, anchor, REPO_ROOT / "eval" / "datasets")
     typer.echo(f"dev {len(dev)}, test {len(test)} cases -> eval/datasets (anchor {anchor['end']}, seed {anchor['seed']})")
+
+
+EVAL_NOTES = [
+    "Questions are generated deterministically from simulator ground truth (`copilot eval-build`), labelled "
+    "`review: generated`; they have not yet been reviewed by a person.",
+    "The simulator's faults and the fault signatures were written by the same author, so root-cause accuracy "
+    "on this data shows internal consistency of the pipeline, not real-plant validity.",
+    "The test split (50 cases, hash in eval/datasets/test.sha256) was not used for any tuning.",
+    "Hardware: laptop RTX 3050 Ti 4 GB, Ryzen 7 4800H; LLM qwen2.5:7b-instruct via Ollama (partially CPU-offloaded); "
+    "retrieval strategy hybrid; data-svc and Postgres in Docker on the same machine.",
+    "Cost is local compute only: reported as latency and tokens; there is no per-request API bill.",
+]
+
+
+@app.command("eval")
+def eval_e2e(
+    split: str = typer.Option("dev", help="dev | test"),
+    mode: str = typer.Option("template", help="template | llm"),
+    limit: int | None = typer.Option(None, help="Run at most N new cases (resumable)."),
+    fresh: bool = typer.Option(False, help="Discard earlier results for this split and mode."),
+) -> None:
+    """Run the end-to-end evaluation against the live stack and write eval/reports/e2e-<split>-<mode>.{jsonl,md}."""
+    from datetime import date
+
+    from copilot.api import default_deps
+    from copilot.auth import issue_token, verify_token
+    from copilot.eval.dataset import check_anchor, load_dataset
+    from copilot.eval.e2e import render_e2e_report, run_cases, summarize
+
+    if split not in ("dev", "test") or mode not in ("template", "llm"):
+        raise typer.BadParameter("split must be dev|test and mode template|llm")
+    datasets = REPO_ROOT / "eval" / "datasets"
+    check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
+    cases = load_dataset(datasets, split)
+    settings = get_settings()
+    out = REPO_ROOT / "eval" / "reports" / f"e2e-{split}-{mode}.jsonl"
+    if fresh and out.exists():
+        out.unlink()
+
+    def principal_for(case):
+        return verify_token(issue_token(case.tenant, "eval-runner", settings.jwt_secret), settings.jwt_secret)
+
+    rows = run_cases(cases, default_deps(), mode, out, limit, principal_for)
+    summary = summarize(rows)
+    title = f"End-to-end evaluation — {split} split, {mode} mode ({len(rows)}/{len(cases)} cases, {date.today()})"
+    out.with_suffix(".md").write_text(render_e2e_report(summary, rows, title, EVAL_NOTES), encoding="utf-8")
+    a = summary["all"]
+    typer.echo(f"{len(rows)}/{len(cases)} cases | status {a['status_acc']} | top-1 {a['top1']} | top-3 {a['top3']} | "
+               f"citation {a['citation']} | leaks {a['leaks']} | unsafe {a['unsafe']} | errors {a['errors']} | "
+               f"p50 {summary['latency']['total']['p50']} ms")
+    typer.echo(f"report: {out.with_suffix('.md')}")
