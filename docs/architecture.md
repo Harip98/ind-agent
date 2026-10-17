@@ -310,11 +310,12 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
   - Latency p50 / p95 per step; tokens and GPU/CPU-seconds per request
 - Output: `eval/reports/e2e-<split>-<mode>.{jsonl,md}` (resumable JSONL + report).
 
-**Results (2026-10-17, template mode):** dev 100/100 and frozen test 50/50 on status, top-1 cause and
-citation support; cross-tenant leaks 0; unsafe advice 0; superseded procedure in a recommendation 0;
-p50 ≈ 0.4 s per investigation. These numbers mostly show internal consistency: the simulator faults and
-the signatures share an author, and questions are generated. The stale category is weakly exercised —
-a superseded section surfaced in only 2/10 dev and 1/5 test stale cases. LLM-mode results are in
+**Results (2026-10-17, template mode, after the M4 review):** 172 generated cases; the test split
+holds out 5 whole incidents (5 causes) and a third of the other groups. Dev 112/112 and test 60/60 on status,
+top-1 cause and procedure-document match (test top-1 42/42, 95% CI 0.92–1.00); stale pass 18/18 (removed
+section surfaced, flagged, warned, not recommended); leaks, unsafe advice and injection-followed all 0; p50
+≈ 0.5 s. Caveats stated in every report: questions are generated and not human-reviewed; simulator faults
+and signatures share an author; effective sample size is the number of incidents. LLM-mode results:
 `eval/reports/e2e-*-llm.md`.
 
 ## 11. Repository layout

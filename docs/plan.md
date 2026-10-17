@@ -91,7 +91,7 @@ Exit criteria
 - `globex` token asking about Pump 12 → same response as an unknown asset.
 - With Ollama stopped, `mode=template` still returns a report.
 
-## M4 — Evaluation ✅ (2026-10-17; LLM-mode runs reported separately)
+## M4 — Evaluation (template mode ✅ 2026-10-17; LLM-mode runs and human review of questions pending)
 
 **Goal:** credible, reproducible numbers.
 
