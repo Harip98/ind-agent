@@ -201,3 +201,19 @@ def test_retrieval_query_includes_the_question(sim):
     q = "Investigate yesterday's temperature alarm on Pump 12. Should we top up the grease at every alarm?"
     investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim, retriever=r), "t19")
     assert any("grease" in call[1] for call in r.calls)
+
+
+def test_truncated_llm_output_is_a_failed_attempt_not_an_outage(sim):
+    from copilot.ollama import OllamaOutputError
+
+    llm = FakeLLM([OllamaOutputError("chat output was not valid JSON"), _good_llm_answer()])
+    out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=llm), "t20")
+    assert out["status"] == "ok" and out["llm"]["attempts"] == 2
+    assert any("not valid JSON" in e for e in out["llm"]["verifier_errors"])
+
+
+def test_question_gets_its_own_retrieval(sim):
+    r = FakeRetriever()
+    q = "Investigate yesterday's temperature alarm on Pump 12. Should we top up the grease at every alarm?"
+    investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim, retriever=r), "t21")
+    assert any(call[1] == q for call in r.calls)

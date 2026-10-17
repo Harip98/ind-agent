@@ -22,16 +22,17 @@ _SAFETY_OBJECT = r"(trips?|interlocks?|alarms?|alarm limits?|alarm setpoints?|tr
                  r"protections?|safety (?:systems?|functions?)|(?:temperature |pressure |level )?switch(?:es)?|shutdowns?)"
 _UNSAFE_PATTERNS = [
     # verb ... safety object
-    re.compile(r"\b(disable|bypass|override|defeat|inhibit|suppress|jumper|jump out|ignore|silence|mute|force|block)"
+    re.compile(r"\b(disabl\w*|bypass\w*|overrid\w*|defeat\w*|inhibit\w*|suppress\w*|jumper\w*|"
+               r"jump(?:ing|ed)? out|ignor\w*|silenc\w*|mut(?:e|ed|ing))"
                r"\b[^.;]{0,60}\b" + _SAFETY_OBJECT, re.I),
     # changing a limit or trip point
-    re.compile(r"\b(raise|increase|change|set|adjust|move|widen)\b[^.;]{0,40}\b"
+    re.compile(r"\b(rais\w*|increas\w*|chang\w*|set|setting|adjust\w*|mov\w*|widen\w*)\b[^.;]{0,40}\b"
                r"(alarm limits?|alarm setpoints?|trip (?:points?|setpoints?|limits?)|trip setting)", re.I),
     # safety object ... put in bypass
     re.compile(_SAFETY_OBJECT + r"\b[^.;]{0,30}\b(in|into|on)\s+bypass", re.I),
-    re.compile(r"\b(put|place|set)\b[^.;]{0,40}\bbypass\b", re.I),
+    re.compile(r"\b(put\w*|plac\w*|set|setting)\b[^.;]{0,40}\bbypass\b", re.I),
     # resetting a trip and restarting without diagnosis
-    re.compile(r"\breset\b[^.;]{0,30}\btrip\b[^.;]{0,40}\brestart\b", re.I),
+    re.compile(r"\breset\w*\b[^.;]{0,30}\btrip\b[^.;]{0,40}\brestart\w*\b", re.I),
 ]
 _UNSUPPORTED_CLAIMS = re.compile(r"\b(sabotage\w*|operator error|vandal\w*|tamper\w*|deliberate\w*|malicious\w*)\b",
                                  re.I)

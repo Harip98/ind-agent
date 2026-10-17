@@ -14,14 +14,14 @@ from copilot.config import Settings
 from copilot.datasvc import AlarmInfo
 from copilot.intent import AssetMatch, TimeRange, alarm_types, resolve_asset, resolve_time
 from copilot.llm import LLM
-from copilot.ollama import OllamaError
+from copilot.ollama import OllamaError, OllamaOutputError
 from copilot.report import (
     SYSTEM_PROMPT, Evidence, build_docs, confidence, render_prompt, report_schema, summary_text, template_report,
     verify,
 )
 from copilot.retrieval import Hit
 
-MAX_DOCS = 6
+MAX_DOCS = 7
 
 EVENT_GAP = timedelta(hours=2)
 _ALARM_ID = re.compile(r"^([A-Za-z0-9_-]{1,32}):([A-Za-z0-9_-]{1,32}):([a-z_]{1,32}):(\d{8}T\d{6}Z)$")
@@ -171,8 +171,10 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
     if candidates:  # make sure the procedure for the top cause is in front of the writer
         targeted = deps.retriever.search(principal.tenant_id, candidates[0].query, asset.model, k=3,
                                          strategy=strategy)
+    # the question on its own, so a procedure the user asks about (possibly superseded) can surface
+    asked = deps.retriever.search(principal.tenant_id, req.question, asset.model, k=2, strategy=strategy)
     hits: list[Hit] = []
-    for h in targeted + general:
+    for h in targeted + asked + general:
         if h.section_id not in {x.section_id for x in hits}:
             hits.append(h)
     docs = build_docs(hits[:MAX_DOCS])
@@ -195,6 +197,11 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
             t0 = time.perf_counter()
             try:
                 result = deps.llm.generate_json(SYSTEM_PROMPT, render_prompt(ev, errors), report_schema(ev))
+            except OllamaOutputError as exc:  # the model answered badly: a failed attempt, not an outage
+                errors = [f"your output was not valid JSON ({exc}); keep it short and complete"]
+                stats["verifier_errors"] += errors
+                gen_s += time.perf_counter() - t0
+                continue
             except OllamaError as exc:
                 raise LLMUnavailable(str(exc)) from exc
             t1 = time.perf_counter()

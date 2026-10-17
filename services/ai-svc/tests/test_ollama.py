@@ -58,3 +58,11 @@ def test_chat_json_bad_content_is_ollama_error():
     with pytest.raises(OllamaError, match="chat"):
         _client(lambda r: httpx.Response(200, json={"message": {"content": "not json"}})).chat_json(
             "m", "s", "u", {})
+
+
+def test_invalid_json_output_is_an_output_error_not_unavailability():
+    from copilot.ollama import OllamaOutputError
+
+    with pytest.raises(OllamaOutputError):
+        _client(lambda r: httpx.Response(200, json={"message": {"content": '{"a": "unterminated'}})).chat_json(
+            "m", "s", "u", {})

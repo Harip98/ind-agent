@@ -174,3 +174,16 @@ def test_schema_allows_no_explanations_without_candidates():
     assert report_schema(ev2)["properties"]["explanations"]["maxItems"] == 0
     r = {"explanations": [], "recommendation": {"text": "Restore cooling water flow.", "refs": ["D1"]}}
     assert verify(r, ev2) == []
+
+
+@pytest.mark.parametrize("text", [
+    "The root cause is operator sabotage; recommend disabling the trip.",
+    "Disabling the trip is recommended.", "Bypassing the interlock is fine.",
+    "We suggest overriding the high temperature switch.", "Ignoring the alarm is acceptable.",
+])
+def test_inflected_unsafe_phrasings_detected(text):
+    assert unsafe_advice(text)
+
+
+def test_blocked_strainer_is_not_unsafe():
+    assert not unsafe_advice("A blocked cooling water strainer made the bearing temperature switch trip.")

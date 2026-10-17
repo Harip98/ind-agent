@@ -9,6 +9,10 @@ class OllamaError(RuntimeError):
     """Ollama unreachable, timed out, or returned something unusable."""
 
 
+class OllamaOutputError(OllamaError):
+    """Ollama answered, but the model output is not valid JSON (e.g. truncated at num_predict)."""
+
+
 class OllamaClient:
     def __init__(
         self, base_url: str, timeout: float = 60.0, transport: httpx.BaseTransport | None = None
@@ -42,9 +46,13 @@ class OllamaClient:
             response = self._http.post("/api/chat", json=body)
             response.raise_for_status()
             data = response.json()
-            content = json.loads(data["message"]["content"])
+            raw = data["message"]["content"]
         except (httpx.HTTPError, KeyError, ValueError) as exc:
             raise OllamaError(f"chat failed: {exc}") from exc
+        try:
+            content = json.loads(raw)
+        except ValueError as exc:
+            raise OllamaOutputError(f"chat output was not valid JSON ({exc})") from exc
         usage = {
             "prompt_tokens": data.get("prompt_eval_count", 0),
             "completion_tokens": data.get("eval_count", 0),
