@@ -1,5 +1,6 @@
 """Development token issuer. A real IdP (OIDC) replaces this; services only verify tokens."""
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -34,3 +35,36 @@ def issue_token(
         "exp": int((issued + ttl).timestamp()),
     }
     return jwt.encode(claims, secret, algorithm="HS256")
+
+
+class TokenError(ValueError):
+    """Missing, malformed, expired or otherwise unacceptable token."""
+
+
+@dataclass(frozen=True)
+class Principal:
+    tenant_id: str
+    sub: str
+    roles: tuple[str, ...]
+    token: str
+
+
+def verify_token(token: str, secret: str) -> Principal:
+    """Same rules as data-svc: HS256, iss/aud, exp+iat required, lifetime <= 1 h, 30 s leeway."""
+    try:
+        claims = jwt.decode(
+            token, secret, algorithms=["HS256"], audience=AUDIENCE, issuer=ISSUER, leeway=30,
+            options={"require": ["exp", "iat", "sub", "iss", "aud"]},
+        )
+    except jwt.PyJWTError as exc:
+        raise TokenError(str(exc)) from exc
+    now = datetime.now(UTC).timestamp()
+    tenant, sub = claims.get("tenant_id"), claims.get("sub")
+    if not isinstance(tenant, str) or not tenant or not isinstance(sub, str) or not sub:
+        raise TokenError("tenant_id and sub are required")
+    if claims["iat"] > now + 30:
+        raise TokenError("token issued in the future")
+    if claims["exp"] - claims["iat"] > MAX_TTL.total_seconds():
+        raise TokenError("token lifetime exceeds 1 hour")
+    roles = claims.get("roles") or []
+    return Principal(tenant, sub, tuple(str(r) for r in roles), token)
