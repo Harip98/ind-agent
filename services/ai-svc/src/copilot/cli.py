@@ -177,7 +177,7 @@ def ask(
     question: str,
     tenant: str = typer.Option(..., help="Tenant id (a dev token is minted for it)."),
     as_of: str | None = typer.Option(None, help="ISO-8601 'now' for relative times; default: simgen end."),
-    mode: str = typer.Option("llm", help="llm | template"),
+    mode: str = typer.Option("llm", help="llm | template | agent"),
     strategy: str | None = typer.Option(None, help="vector | hybrid | hybrid_rerank"),
     asset_id: str | None = typer.Option(None, help="Answer an asset clarification."),
     alarm_id: str | None = typer.Option(None, help="Answer an event clarification."),
@@ -209,6 +209,9 @@ def ask(
             typer.echo(f"  - {o['label']}   ({hint})")
         return
     rep = result["report"]
+    if rep is None:  # agent_failed: no report
+        typer.echo("no report; tool calls: " + ", ".join((result.get("llm") or {}).get("tool_calls") or []))
+        return
     typer.echo(f"\nSUMMARY\n  {rep['summary']}\n\nOBSERVATIONS")
     for o in rep["observations"]:
         typer.echo(f"  [{o['id']}] {o['text']}")
@@ -308,7 +311,7 @@ def _fingerprint(split: str, mode: str, settings) -> dict:
 @app.command("eval")
 def eval_e2e(
     split: str = typer.Option("dev", help="dev | test"),
-    mode: str = typer.Option("template", help="template | llm"),
+    mode: str = typer.Option("template", help="template | llm | agent"),
     limit: int | None = typer.Option(None, help="Run at most N new cases (resumable)."),
     fresh: bool = typer.Option(False, help="Discard earlier results for this split and mode."),
     retry_errors: bool = typer.Option(False, help="Re-run cases whose earlier attempt ended in an error."),
@@ -321,8 +324,8 @@ def eval_e2e(
     from copilot.eval.dataset import check_anchor, load_dataset
     from copilot.eval.e2e import EvalStateError, render_e2e_report, run_cases, summarize
 
-    if split not in ("dev", "test") or mode not in ("template", "llm"):
-        raise typer.BadParameter("split must be dev|test and mode template|llm")
+    if split not in ("dev", "test") or mode not in ("template", "llm", "agent"):
+        raise typer.BadParameter("split must be dev|test and mode template|llm|agent")
     datasets = REPO_ROOT / "eval" / "datasets"
     check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
     cases = load_dataset(datasets, split)
@@ -351,3 +354,24 @@ def eval_e2e(
                f"leaks {a['leaks']} | unsafe {a['unsafe']} | injection {a['injection_followed']} | errors {a['errors']} | "
                f"p50 {summary['latency']['total']['p50']} ms")
     typer.echo(f"report: {out.with_suffix('.md')}")
+
+
+@app.command("eval-compare")
+def eval_compare(
+    split: str = typer.Option("test", help="dev | test"),
+    modes: str = typer.Option("template,llm,agent", help="Comma-separated modes, in column order."),
+    reports_dir: Path | None = typer.Option(None, help="Where e2e-<split>-<mode>.jsonl live (default eval/reports)."),
+) -> None:
+    """Print one comparison table over saved end-to-end results (no new runs)."""
+    from copilot.eval.e2e import load_rows, render_comparison, summarize
+
+    base = reports_dir or REPO_ROOT / "eval" / "reports"
+    summaries = {}
+    for mode in [m.strip() for m in modes.split(",") if m.strip()]:
+        rows = load_rows(base / f"e2e-{split}-{mode}.jsonl")
+        if not rows:
+            typer.echo(f"{mode}: no results in {base}")
+            continue
+        summaries[mode] = summarize(rows, mode)
+    if summaries:
+        typer.echo(render_comparison(summaries))

@@ -59,3 +59,26 @@ class OllamaClient:
             "seconds": data.get("total_duration", 0) / 1e9,
         }
         return content, usage
+
+    def chat_tools(
+        self, model: str, messages: list[dict], tools: list[dict],
+        num_ctx: int = 8192, num_predict: int = 768,
+    ) -> tuple[dict, dict]:
+        """One tool-calling chat turn; returns (assistant message, usage)."""
+        body = {
+            "model": model, "stream": False, "keep_alive": "30m", "tools": tools, "messages": messages,
+            "options": {"temperature": 0, "num_ctx": num_ctx, "num_predict": num_predict},
+        }
+        try:
+            response = self._http.post("/api/chat", json=body)
+            response.raise_for_status()
+            data = response.json()
+            message = data["message"]
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            raise OllamaError(f"chat failed: {exc}") from exc
+        usage = {
+            "prompt_tokens": data.get("prompt_eval_count", 0),
+            "completion_tokens": data.get("eval_count", 0),
+            "seconds": data.get("total_duration", 0) / 1e9,
+        }
+        return message, usage

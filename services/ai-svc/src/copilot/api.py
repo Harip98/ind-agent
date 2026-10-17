@@ -40,7 +40,7 @@ class DevTokenBody(BaseModel):
 class InvestigateBody(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
     as_of: datetime | None = None
-    mode: Literal["llm", "template"] = "llm"
+    mode: Literal["llm", "template", "agent"] = "llm"
     strategy: Literal["vector", "hybrid", "hybrid_rerank"] | None = None
     asset_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,32}$")
     alarm_id: str | None = Field(default=None, max_length=140)
@@ -49,7 +49,7 @@ class InvestigateBody(BaseModel):
 def default_deps() -> PipelineDeps:
     from copilot.causes import load_signatures
     from copilot.kb.embed import OllamaEmbedder
-    from copilot.llm import OllamaLLM
+    from copilot.llm import OllamaLLM, OllamaToolLLM
     from copilot.ollama import OllamaClient
     from copilot.retrieval import Retriever
     from copilot.retrieval.rerank import CrossEncoderReranker
@@ -63,6 +63,7 @@ def default_deps() -> PipelineDeps:
         llm=OllamaLLM(llm_client, s.llm_model, s.llm_num_ctx),
         signatures=load_signatures(),
         settings=s,
+        tool_llm=OllamaToolLLM(llm_client, s.llm_model, s.agent_num_ctx),
     )
 
 

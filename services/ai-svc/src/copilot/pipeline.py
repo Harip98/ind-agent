@@ -13,10 +13,17 @@ from copilot.causes import SignatureSet, match
 from copilot.config import Settings
 from copilot.datasvc import AlarmInfo
 from copilot.intent import AssetMatch, TimeRange, alarm_types, resolve_asset, resolve_time
-from copilot.llm import LLM
+from copilot.llm import LLM, ToolLLM
 from copilot.ollama import OllamaError, OllamaOutputError
 from copilot.report import (
-    SYSTEM_PROMPT, Evidence, build_docs, confidence, render_prompt, report_schema, summary_text, template_report,
+    SYSTEM_PROMPT,
+    Evidence,
+    build_docs,
+    confidence,
+    render_prompt,
+    report_schema,
+    summary_text,
+    template_report,
     verify,
 )
 from copilot.retrieval import Hit
@@ -35,7 +42,7 @@ class LLMUnavailable(RuntimeError):
 class InvestigateRequest:
     question: str
     as_of: datetime | None = None
-    mode: str = "llm"  # llm | template
+    mode: str = "llm"  # llm | template | agent
     strategy: str | None = None
     asset_id: str | None = None  # answer to an asset clarification
     alarm_id: str | None = None  # answer to an event clarification (id from data-svc)
@@ -48,6 +55,7 @@ class PipelineDeps:
     llm: LLM | None
     signatures: SignatureSet
     settings: Settings
+    tool_llm: ToolLLM | None = None  # mode=agent only
 
 
 def _alarm_dict(a: AlarmInfo) -> dict:
@@ -71,7 +79,61 @@ def _local(dt: datetime, tz: str) -> str:
     return dt.astimezone(ZoneInfo(tz)).strftime("%Y-%m-%d %H:%M %Z")
 
 
+def collect(ds, asset, alarm: AlarmInfo, deps: PipelineDeps, timezone: str,
+            lap: Callable[[str], None] = lambda _: None):
+    """Reading windows around the alarm -> deterministic analysis -> ranked candidate causes."""
+    windows = {}
+    t = alarm.raised_at
+    for s in asset.sensors:
+        windows[s.tag] = TagWindows(ds.window(asset.id, s.tag, t - SHORT_BEFORE, t + SHORT_AFTER),
+                                    ds.window(asset.id, s.tag, t - LONG_BEFORE, t + LONG_AFTER))
+    lap("data")
+    roles = deps.signatures.roles.get(asset.model, {})
+    analysis = analyze(asset, alarm, windows, roles, timezone)
+    return analysis, match(deps.signatures, asset.model, analysis.features, analysis.feature_refs)
+
+
+def observations_dict(analysis) -> list[dict]:
+    return [{"id": o.id, "kind": o.kind, "tag": o.tag, "text": o.text, "values": o.values}
+            for o in analysis.observations]
+
+
+def citations(docs) -> list[dict]:
+    return [{"ref": d.id, "doc_id": d.hit.doc_id, "version": d.hit.version, "section": d.hit.section_no,
+             "title": d.hit.title, "heading": d.hit.heading, "stale": d.hit.stale or not d.hit.is_current,
+             "content": d.hit.content} for d in docs]
+
+
+def final_report(ev: Evidence, report: dict) -> dict:
+    """The response report: deterministic summary, ranking and confidence; the writer's texts and refs."""
+    texts = {e["cause_code"]: e for e in report["explanations"]}
+    explanations = [
+        {"cause_code": c.code, "text": texts[c.code]["text"], "refs": texts[c.code]["refs"],
+         "confidence": confidence(c, rank), "label": c.label, "score": c.score}
+        for rank, c in enumerate(ev.candidates) if c.code in texts
+    ]
+    insufficient = []
+    if not ev.candidates:
+        insufficient.append("The readings match no known fault signature.")
+    if not any(d.hit.is_current and not d.hit.stale for d in ev.docs):
+        insufficient.append("No current procedure matched; only superseded or no documents were found.")
+    if any(d.hit.stale for d in ev.docs):
+        insufficient.append("Some matching procedures are SUPERSEDED versions; confirm the current procedure.")
+    return {
+        "summary": summary_text(ev),
+        "observations": [{"id": o.id, "text": o.text} for o in ev.observations],
+        "possible_explanations": explanations,
+        "recommendation": {"text": report["recommendation"]["text"],  # only verified fields
+                           "refs": list(report["recommendation"].get("refs", []))},
+        "insufficient_evidence": insufficient,
+    }
+
+
 def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDeps, trace_id: str) -> dict:
+    if req.mode == "agent":
+        from copilot.agent import run_agent
+
+        return run_agent(req, principal, deps, trace_id)
     timings: dict[str, int] = {}
     clock = time.perf_counter()
 
@@ -149,17 +211,8 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
     out["query"].update(alarm_id=alarm.id, alarm_type=alarm.alarm_type, tag=alarm.tag)
     out["evidence"]["alarm"] = _alarm_dict(alarm)
 
-    windows = {}
-    t = alarm.raised_at
-    for s in asset.sensors:
-        windows[s.tag] = TagWindows(ds.window(asset.id, s.tag, t - SHORT_BEFORE, t + SHORT_AFTER),
-                                    ds.window(asset.id, s.tag, t - LONG_BEFORE, t + LONG_AFTER))
-    lap("data")
-    roles = deps.signatures.roles.get(asset.model, {})
-    analysis = analyze(asset, alarm, windows, roles, tenant.timezone)
-    candidates = match(deps.signatures, asset.model, analysis.features, analysis.feature_refs)
-    out["evidence"]["observations"] = [{"id": o.id, "kind": o.kind, "tag": o.tag, "text": o.text,
-                                        "values": o.values} for o in analysis.observations]
+    analysis, candidates = collect(ds, asset, alarm, deps, tenant.timezone, lap)
+    out["evidence"]["observations"] = observations_dict(analysis)
     out["evidence"]["series"] = analysis.series
     lap("analyze")
 
@@ -179,9 +232,7 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
         if h.section_id not in {x.section_id for x in hits}:
             hits.append(h)
     docs = build_docs(hits[:MAX_DOCS])
-    out["citations"] = [{"ref": d.id, "doc_id": d.hit.doc_id, "version": d.hit.version,
-                         "section": d.hit.section_no, "title": d.hit.title, "heading": d.hit.heading,
-                         "stale": d.hit.stale or not d.hit.is_current, "content": d.hit.content} for d in docs]
+    out["citations"] = citations(docs)
     lap("retrieve")
 
     ev = Evidence(req.question, asset, alarm, analysis.observations, candidates, docs, tenant.timezone)
@@ -223,29 +274,6 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
         if req.mode == "llm":
             out["status"] = "degraded"
     # Ranking and confidence come from the signatures, never from the LLM: keep its texts, in candidate order.
-    texts = {e["cause_code"]: e for e in report["explanations"]}
-    explanations = [
-        {"cause_code": c.code, "text": texts[c.code]["text"], "refs": texts[c.code]["refs"],
-         "confidence": confidence(c, rank)}
-        for rank, c in enumerate(candidates) if c.code in texts
-    ]
+    out["report"] = final_report(ev, report)
     lap("report")
-
-    labels = {c.code: (c.label, c.score) for c in candidates}
-    insufficient = []
-    if not candidates:
-        insufficient.append("The readings match no known fault signature.")
-    if not any(d.hit.is_current and not d.hit.stale for d in docs):
-        insufficient.append("No current procedure matched; only superseded or no documents were found.")
-    if any(d.hit.stale for d in docs):
-        insufficient.append("Some matching procedures are SUPERSEDED versions; confirm the current procedure.")
-    out["report"] = {
-        "summary": summary_text(ev),
-        "observations": [{"id": o.id, "text": o.text} for o in analysis.observations],
-        "possible_explanations": [
-            {**e, "label": labels[e["cause_code"]][0], "score": labels[e["cause_code"]][1]}
-            for e in explanations],
-        "recommendation": report["recommendation"],
-        "insufficient_evidence": insufficient,
-    }
     return out

@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     llm_model: str = "qwen2.5:7b-instruct"
     llm_timeout_s: float = 240.0
     llm_num_ctx: int = 4096
+    agent_num_ctx: int = 8192  # mode=agent: the tool-call history grows each turn
     data_svc_url: str = "http://127.0.0.1:8081"
     retrieval_strategy: str = "hybrid"
     dev_tenants: list[str] = ["acme", "globex"]

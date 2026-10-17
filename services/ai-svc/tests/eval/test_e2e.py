@@ -88,3 +88,56 @@ def test_summary_and_report(sim, tmp_path):
     assert "| normal |" in md and "note one" in md and "p95" in md and "95% CI" in md
     assert "deterministic" in md
     json.dumps(s)
+
+
+def test_agent_mode_report(sim, tmp_path):
+    from datetime import timedelta
+
+    from test_agent import GOOD_REPORT, call, happy_prefix
+    from test_pipeline import FakeDataSvc
+
+    from copilot.llm import FakeToolLLM
+
+    alarms, _ = FakeDataSvc(sim, "acme").alarms("P-12", END - timedelta(days=2), END)
+    alarm = min((a for a in alarms if a.tag.startswith("TT")), key=lambda a: a.raised_at)
+    look = call("find_alarms", asset_id="P-12", start=(END - timedelta(days=1)).isoformat(), end=END.isoformat(),
+                alarm_type="high_vibration")
+    deps = make_deps(sim)
+    deps.tool_llm = FakeToolLLM(happy_prefix(alarm) + [call("submit_report", **GOOD_REPORT)]
+                                + [look, call("report_no_alarm", asset_id="P-12", reason="none")]
+                                + [call("list_assets")] * 6)
+    rows = run_cases(CASES, deps, "agent", tmp_path / "a.jsonl", fingerprint={**FP, "mode": "agent"})
+    assert [r["status"] for r in rows] == ["ok", "insufficient_evidence", "agent_failed"]
+    s = summarize(rows, mode="agent")
+    assert s["agent"] == {"turns_mean": 4.0, "turns_max": 6, "agent_failed": 1, "tool_calls": {
+        "find_alarms": 2, "analyze_alarm": 1, "search_procedures": 1, "submit_report": 1, "report_no_alarm": 1,
+        "list_assets": 6}}
+    assert s["latency"]["steps"]["agent"]["p50"] is not None
+    md = render_e2e_report(s, rows, "Agent report", [], mode="agent")
+    assert "the agent chooses the asset and the alarm" in md and "agent_failed 1" in md and "turns" in md
+
+
+def test_comparison_table_across_modes(sim, tmp_path):
+    from copilot.eval.e2e import render_comparison
+
+    rows = run_cases(CASES, make_deps(sim), "template", tmp_path / "t.jsonl", fingerprint=FP)
+    summaries = {"template": summarize(rows, "template"), "agent": summarize(rows, "agent")}
+    md = render_comparison(summaries)
+    lines = md.splitlines()
+    header = next(line for line in lines if line.startswith("| Metric"))
+    assert header == "| Metric | template | agent |"
+    assert any(line.startswith("| Status accuracy | 3/3 (1.00") for line in lines)
+    assert any(line.startswith("| Cross-tenant leaks | 0 | 0 |") for line in lines)
+    for metric in ("Top-1 cause", "Procedure doc match", "Verified", "Unsafe advice", "Injection followed",
+                   "p50 latency, full investigations", "p95 latency, full investigations", "Tokens per request",
+                   "Agent failed"):
+        assert any(line.startswith(f"| {metric} |") for line in lines), metric
+
+
+def test_cost_is_averaged_over_full_investigations_only():
+    base = {"category": "normal", "incident_id": None, "expected_cause": None, "status": "ok", "status_ok": True,
+            "stale_in_recommendation": False, "stale_flagged": False, "unsafe": False, "injection_followed": False,
+            "leak": [], "error": None, "timings": {}, "wall_ms": 1, "verifier_categories": {}}
+    rows = [{**base, "id": "a", "expected_status": "ok", "tokens": 3000, "llm_seconds": 90.0},
+            {**base, "id": "b", "expected_status": "needs_clarification", "tokens": 500, "llm_seconds": 10.0}]
+    assert summarize(rows, "agent")["cost"]["tokens_mean"] == 3000

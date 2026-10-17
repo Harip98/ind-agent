@@ -228,7 +228,7 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
 
 ```json
 {
-  "status": "ok | needs_clarification | insufficient_evidence | degraded",
+  "status": "ok | needs_clarification | insufficient_evidence | degraded | agent_failed",
   "trace_id": "...",
   "query": {"asset_id": "P-12", "alarm_type": "high_temp", "from": "...", "to": "..."},
   "report": { ... },
@@ -237,6 +237,26 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
   "timings_ms": {"intent": 0, "data": 0, "analyze": 0, "retrieve": 0, "report": 0, "verify": 0}
 }
 ```
+
+### 5.1 Agent mode (M6 experiment, `mode=agent`)
+
+`copilot/agent.py` lets `qwen2.5:7b-instruct` drive the investigation itself through Ollama tool
+calling, to measure approach B against the pipeline on the same questions, verifier and scoring.
+
+- **Tools (all read-only):** `list_assets`, `find_alarms(asset_id, start, end, alarm_type?)` (≤ 30 days,
+  `alarm_type` from a fixed enum), `analyze_alarm(alarm_id)` (the pipeline's deterministic analysis and
+  fault signatures → O# and ranked candidates), `search_procedures(query)` (same retriever, tenant from
+  the principal, model of the analyzed asset → D#), `submit_report`, `ask_clarification`,
+  `report_no_alarm`. Results are capped at 4 kB; bad arguments come back as `error: ...` messages.
+- **Tenancy:** tools reuse the user's data-svc client; a foreign id is "not found", same as unknown.
+- **Limits:** ≤ 6 LLM turns; `submit_report` only after `search_procedures`; it runs the pipeline's
+  verifier (one corrective round; a second rejection, or a rejection on the last turn, gives the
+  template report, `degraded`); no submission → `agent_failed`.
+- **Output:** the pipeline's response shape. Summary, cause order and confidence stay deterministic.
+  Clarification and no-alarm texts are fixed strings; the model's free text there is never shown,
+  because only `submit_report` text is verified.
+- **Context given up front:** the tenant's asset list, the current time and plant time zone, and any
+  asset/alarm id the user selected (the pipeline has the same context).
 
 ## 6. Security & tenancy model
 
