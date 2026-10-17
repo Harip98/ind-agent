@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "typer>=0.15",
     "tzdata>=2024.2",
+    "sentence-transformers>=3.0",
 ]
 
 [project.scripts]

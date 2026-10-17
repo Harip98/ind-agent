@@ -153,7 +153,7 @@ every primary key, and carried down by composite foreign keys
 (`documents → doc_versions → sections → chunks`), so a child row can never carry a different
 tenant than its document, and two tenants may use the same document id.
 
-Indexes: HNSW on `chunks.embedding` (cosine), GIN on `chunks.tsv`, B-tree on
+Indexes: GIN on `chunks.tsv`; vector search is exact KNN (sequential scan, cosine) because the corpus is ~100 chunks — sub-millisecond with perfect recall. An HNSW index was dropped (migration 008) after it was observed returning zero rows while re-ingest dead tuples were unvacuumed; re-add HNSW with `hnsw.iterative_scan` above ~50k chunks. B-tree on
 `sensor_readings (tenant_id, asset_id, tag, ts)` and `alarms (tenant_id, asset_id, raised_at)`.
 
 **Roles & RLS**
@@ -191,7 +191,7 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
 6. **Retrieval** — query from alarm type + asset model + candidate causes. SQL filters:
    tenant ∈ {caller tenant, shared}, `asset_models` overlap, `is_current`. If only superseded
    versions match, those are returned with a `stale` flag. Strategies:
-   - `vector`: cosine top-k over `nomic-embed-text` (`search_query:` / `search_document:` prefixes)
+   - `vector`: exact cosine top-k over `nomic-embed-text` (`search_query:` / `search_document:` prefixes)
    - `hybrid`: Postgres FTS (`ts_rank_cd`) + vector, fused with Reciprocal Rank Fusion
    - `hybrid_rerank`: hybrid top-20 → `BAAI/bge-reranker-base` CrossEncoder (CPU) → top-5
 
