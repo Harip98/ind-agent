@@ -217,3 +217,8 @@ def test_question_gets_its_own_retrieval(sim):
     q = "Investigate yesterday's temperature alarm on Pump 12. Should we top up the grease at every alarm?"
     investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim, retriever=r), "t21")
     assert any(call[1] == q for call in r.calls)
+
+
+def test_query_reports_the_plant_timezone(sim):
+    out = investigate(InvestigateRequest(Q, as_of=END, mode="template"), _p(), make_deps(sim), "t22")
+    assert out["query"]["timezone"] == "Asia/Kolkata"

@@ -113,12 +113,13 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
             "message": "Which asset do you mean?" if asset_match.options else
                        "I could not find that asset. Name one of your assets (for example its id).",
             "options": [{"label": f"{a.id} ({a.name})", "asset_id": a.id} for a in listed]}
-        out["query"] = {"time_label": rng.label, "assumptions": assumptions}
+        out["query"] = {"time_label": rng.label, "timezone": tenant.timezone, "assumptions": assumptions}
         return out
 
     asset = asset_match.asset
     out["query"] = {"asset_id": asset.id, "asset_name": asset.name, "model": asset.model,
                     "from": rng.start.isoformat(), "to": rng.end.isoformat(), "time_label": rng.label,
+                    "timezone": tenant.timezone,
                     "alarm_types": list(types), "assumptions": assumptions}
     alarms, _ = ds.alarms(asset.id, rng.start, rng.end)
     out["evidence"]["alarms"] = [_alarm_dict(a) for a in alarms]

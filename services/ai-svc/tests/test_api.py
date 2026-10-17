@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from test_pipeline import FakeDataSvc, FakeRetriever
 
-from copilot.api import create_app
+from copilot.api import WEB_DIR, create_app
 from copilot.auth import issue_token
 from copilot.causes import load_signatures
 from copilot.config import Settings
@@ -107,24 +107,52 @@ def test_dev_endpoints_disabled_by_default(sim):
     assert c.post("/dev/token", json={"tenant": "acme"}).status_code == 404
 
 
-def test_dev_endpoints_in_dev_mode(sim, monkeypatch):
+def _dev_client(sim, host="127.0.0.1", client_ip="127.0.0.1"):
+    deps = PipelineDeps(datasvc=lambda p, t: FakeDataSvc(sim, p.tenant_id), retriever=FakeRetriever(), llm=None,
+                        signatures=load_signatures(), settings=Settings())
+    return TestClient(create_app(lambda: deps, dev=True), base_url=f"http://{host}", client=(client_ip, 50000))
+
+
+def test_dev_endpoints_in_dev_mode(sim):
+    c = _dev_client(sim)
+    d = c.get("/dev/defaults").json()
+    assert d["tenants"] == ["acme", "globex"] and "as_of" in d
+    tok = c.post("/dev/token", json={"tenant": "acme"}).json()["token"]
+    assert c.post("/investigate", json=BODY, headers={"Authorization": f"Bearer {tok}"}).status_code == 200
+    assert c.post("/dev/token", json={"tenant": "evil"}).status_code == 400
+
+
+def test_dev_mode_cannot_be_enabled_by_environment(sim, monkeypatch):
+    monkeypatch.setenv("COPILOT_DEV_MODE", "true")
     from copilot.config import get_settings
 
-    monkeypatch.setenv("COPILOT_DEV_MODE", "true")
     get_settings.cache_clear()
     try:
-        c = _client(sim)
-        d = c.get("/dev/defaults").json()
-        assert d["tenants"] == ["acme", "globex"] and "as_of" in d
-        tok = c.post("/dev/token", json={"tenant": "acme"}).json()["token"]
-        assert c.post("/investigate", json=BODY, headers={"Authorization": f"Bearer {tok}"}).status_code == 200
-        assert c.post("/dev/token", json={"tenant": "evil"}).status_code == 400
+        assert _client(sim).get("/dev/defaults").status_code == 404
     finally:
-        monkeypatch.delenv("COPILOT_DEV_MODE")
         get_settings.cache_clear()
+
+
+def test_dev_endpoints_refuse_non_loopback_clients_and_foreign_hosts(sim):
+    assert _dev_client(sim, client_ip="192.168.1.20").post("/dev/token", json={"tenant": "acme"}).status_code == 404
+    assert _dev_client(sim, host="attacker.example").post("/dev/token", json={"tenant": "acme"}).status_code == 400
+
+
+def test_security_headers_and_no_third_party_assets(sim):
+    r = _client(sim).get("/")
+    csp = r.headers["content-security-policy"]
+    assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp
+    assert r.headers["x-content-type-options"] == "nosniff" and r.headers["cache-control"] == "no-cache"
+    assert "googleapis" not in r.text and "cdnjs" not in r.text
+    assert _client(sim).get("/static/chart.umd.min.js").status_code == 200
 
 
 def test_ui_never_uses_innerhtml():
     from copilot.api import WEB_DIR
 
     assert "innerHTML" not in (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+
+def test_ui_sets_no_inline_style_attributes():
+    js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    assert "style:" not in js and 'setAttribute("style"' not in js  # blocked by style-src 'self'

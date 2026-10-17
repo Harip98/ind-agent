@@ -44,7 +44,6 @@ class Settings(BaseSettings):
     llm_num_ctx: int = 4096
     data_svc_url: str = "http://127.0.0.1:8081"
     retrieval_strategy: str = "hybrid"
-    dev_mode: bool = False  # enables /dev/token and /dev/defaults for local demos only
     dev_tenants: list[str] = ["acme", "globex"]
 
     def password_for(self, role: str) -> str:

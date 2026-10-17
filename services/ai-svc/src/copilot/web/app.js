@@ -3,7 +3,7 @@
 // citations contain untrusted document text (including a deliberate prompt-injection fixture).
 
 const $ = (id) => document.getElementById(id);
-const state = { dev: false, tokens: {}, charts: [], lastQuestion: "" };
+const state = { dev: false, tokens: {}, charts: [], lastQuestion: "", busy: false, seq: 0 };
 
 const EXAMPLES = {
   acme: [
@@ -94,14 +94,22 @@ function notice(text, kind = "info", action = null) {
 
 function clearNotice() { $("notice").className = "notice hidden"; }
 
+function setBusy(busy) {
+  state.busy = busy;
+  const btn = $("submit");
+  btn.disabled = busy;
+  btn.textContent = busy ? "Investigating…" : "Investigate";
+  for (const b of document.querySelectorAll(".examples button, .clarify button, .notice button")) b.disabled = busy;
+}
+
 async function ask(extra = {}, modeOverride = null) {
+  if (state.busy) return; // one investigation at a time; a second click must not race the first
   const question = $("question").value.trim();
   if (!question) { $("question").focus(); return; }
   state.lastQuestion = question;
   const mode = modeOverride || $("mode").value;
-  const btn = $("submit");
-  btn.disabled = true;
-  btn.textContent = "Investigating…";
+  const seq = ++state.seq;
+  setBusy(true);
   notice(mode === "llm" ? "Investigating. The language model writes the report locally; this takes about a minute."
                         : "Investigating…");
   try {
@@ -113,14 +121,14 @@ async function ask(extra = {}, modeOverride = null) {
     });
     const trace = r.headers.get("X-Trace-Id") || "";
     const data = await r.json().catch(() => ({}));
+    if (seq !== state.seq) return;
     if (!r.ok) return showError(r.status, data, trace, extra);
     clearNotice();
     render(data);
   } catch (err) {
     notice(err.message || "The request failed. Check that the service is running.", "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Investigate";
+    if (seq === state.seq) setBusy(false);
   }
 }
 
@@ -128,7 +136,7 @@ function showError(status, data, trace, extra) {
   const code = data && data.error ? data.error.code : "";
   const ref = trace ? ` (trace ${trace})` : "";
   if (status === 401) return notice("Your access token is missing, invalid or expired." + ref, "error");
-  if (status === 422) return notice("The question must be between 1 and 1000 characters." + ref, "error");
+  if (status === 422) return notice(invalidInput(data) + ref, "error");
   if (status === 429) return notice("Too many requests. Try again in a second." + ref, "error");
   if (code === "llm_unavailable") {
     const b = el("button", { text: "Write it from the evidence only", attrs: { type: "button" } });
@@ -137,6 +145,14 @@ function showError(status, data, trace, extra) {
   }
   if (code === "data_unavailable") return notice("The plant data service is not reachable." + ref, "error");
   return notice(`The investigation failed (HTTP ${status}).` + ref, "error");
+}
+
+function invalidInput(data) {
+  const first = data && Array.isArray(data.detail) ? data.detail[0] : null;
+  const field = first && Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : "";
+  if (field === "as_of") return "As of must be an ISO 8601 date and time with a time zone, for example 2026-10-17T12:52:00Z.";
+  if (field === "question") return "The question must be between 1 and 1000 characters.";
+  return `The request was not accepted${field ? ` (check ${field})` : ""}.`;
 }
 
 function refChips(refs) {
@@ -159,10 +175,17 @@ function jumpTo(ref) {
   setTimeout(() => target.classList.remove("flash"), 1600);
 }
 
-function fmtTime(iso) {
+// Times are shown in the plant's time zone (from the response), labelled, so "yesterday" matches the alarm.
+function fmtTime(iso, timeZone) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  // dateStyle/timeStyle cannot be combined with timeZoneName, so spell the fields out
+  const opts = { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" };
+  try {
+    return d.toLocaleString(undefined, { ...opts, timeZone });
+  } catch (_) { // unknown zone name: fall back to the viewer's zone, still labelled
+    return d.toLocaleString(undefined, opts);
+  }
 }
 
 function render(data) {
@@ -196,8 +219,8 @@ function render(data) {
     const strip = el("div", { cls: "annunciator" + (alarm.cleared_at ? " cleared" : "") }, [
       el("span", { cls: "tag", text: alarm.tag }),
       el("span", { cls: "what", text: alarm.message }),
-      el("span", { cls: "detail", text: `Raised ${fmtTime(alarm.raised_at)}` +
-        (alarm.cleared_at ? `, cleared ${fmtTime(alarm.cleared_at)}` : ", still active at the end of the data") }),
+      el("span", { cls: "detail", text: `Raised ${fmtTime(alarm.raised_at, q.timezone)}` +
+        (alarm.cleared_at ? `, cleared ${fmtTime(alarm.cleared_at, q.timezone)}` : ", still active at the end of the data") }),
     ]);
     out.append(strip);
   }
@@ -215,8 +238,9 @@ function render(data) {
   if ((report.possible_explanations || []).length) {
     const list = el("ol", { cls: "causes" });
     for (const e of report.possible_explanations) {
-      const meter = el("span", { cls: "meter", attrs: { title: `signature score ${e.score}` } },
-                       [el("span", { attrs: { style: `width:${Math.round((e.score || 0) * 100)}%` } })]);
+      const fill = el("span");
+      fill.style.width = `${Math.round(Math.min(Math.max(Number(e.score) || 0, 0), 1) * 100)}%`; // CSSOM, allowed by the CSP
+      const meter = el("span", { cls: "meter", attrs: { title: `signature score ${e.score}` } }, [fill]);
       list.append(el("li", {}, [
         el("div", { cls: "head" }, [el("span", { cls: "label", text: e.label }),
                                     el("span", { cls: "confidence", text: `${e.confidence} confidence` }), meter]),

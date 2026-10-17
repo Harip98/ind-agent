@@ -153,18 +153,13 @@ def serve(
     dev: bool = typer.Option(False, "--dev", help="Enable demo token minting (/dev/token). Local demos only."),
 ) -> None:
     """Run the HTTP API (POST /investigate) and the web UI (GET /)."""
-    import os
-
     import uvicorn
 
     from copilot.api import create_app
 
-    if dev:
-        if host not in ("127.0.0.1", "localhost"):
-            raise typer.BadParameter("--dev only binds to 127.0.0.1", param_hint="--host")
-        os.environ["COPILOT_DEV_MODE"] = "true"
-        get_settings.cache_clear()
-    uvicorn.run(create_app(), host=host, port=port)
+    if dev and host not in ("127.0.0.1", "localhost"):
+        raise typer.BadParameter("--dev only binds to 127.0.0.1", param_hint="--host")
+    uvicorn.run(create_app(dev=dev), host=host, port=port)
 
 
 def _default_as_of():

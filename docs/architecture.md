@@ -104,8 +104,8 @@ uv project, package `copilot`, FastAPI.
 |---|---|
 | `POST /investigate` | Run an investigation. Body `{question, as_of?, mode?: "llm" \| "template", strategy?}` |
 | `GET /healthz` | Liveness |
-| `GET /`, `/static/*` | Web UI (vanilla JS + Chart.js, renders server data with `textContent` only) |
-| `GET /dev/defaults`, `POST /dev/token` | Demo helpers, 404 unless `copilot serve --dev` (127.0.0.1 only) |
+| `GET /`, `/static/*` | Web UI (vanilla JS + vendored Chart.js 4.4.1, no third-party requests; renders server data with `textContent` only; CSP `default-src 'self'`, `nosniff`, `Referrer-Policy: no-referrer`) |
+| `GET /dev/defaults`, `POST /dev/token` | Demo helpers. Enabled only by `create_app(dev=True)`, which only `copilot serve --dev` passes (no environment variable can turn it on); bound to 127.0.0.1, answered only for loopback clients, and Host must be `127.0.0.1`/`localhost` (blocks DNS rebinding). Otherwise 404 |
 
 CLI (`copilot …`): `simgen`, `ingest`, `devtoken`, `ask`, `eval`.
 

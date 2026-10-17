@@ -9,10 +9,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, Header
+from fastapi import FastAPI, Header, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from copilot.auth import TokenError, issue_token, verify_token
 from copilot.config import REPO_ROOT, get_settings
@@ -22,6 +23,14 @@ from copilot.pipeline import InvestigateRequest, LLMUnavailable, PipelineDeps, i
 
 _TRACE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 WEB_DIR = Path(__file__).with_name("web")
+LOOPBACK = frozenset({"127.0.0.1", "::1"})
+SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+                               "connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-cache",
+}
 
 
 class DevTokenBody(BaseModel):
@@ -62,10 +71,21 @@ def _error(status: int, code: str, message: str, trace: str) -> JSONResponse:
                         headers={"X-Trace-Id": trace})
 
 
-def create_app(deps_factory: Callable[[], PipelineDeps] | None = None) -> FastAPI:
+def create_app(deps_factory: Callable[[], PipelineDeps] | None = None, dev: bool = False) -> FastAPI:
+    """dev=True (only from `copilot serve --dev`) enables demo token minting for loopback clients."""
     app = FastAPI(title="ind-agent copilot", version="0.1.0")
     deps = lru_cache(maxsize=1)(deps_factory or default_deps)
     log = get_logger()
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for k, v in SECURITY_HEADERS.items():
+            response.headers.setdefault(k, v)
+        return response
+
+    if dev:  # a browser page on another origin must not reach /dev/token through DNS rebinding
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 
     app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
@@ -77,22 +97,22 @@ def create_app(deps_factory: Callable[[], PipelineDeps] | None = None) -> FastAP
     def index() -> FileResponse:
         return FileResponse(WEB_DIR / "index.html", media_type="text/html")
 
-    def _dev_only() -> JSONResponse | None:
-        if not get_settings().dev_mode:
+    def _dev_only(request: Request) -> JSONResponse | None:
+        if not dev or request.client is None or request.client.host not in LOOPBACK:
             return JSONResponse({"error": {"code": "not_found", "message": "not found"}}, status_code=404)
         return None
 
     @app.get("/dev/defaults", include_in_schema=False)
-    def dev_defaults():
-        if blocked := _dev_only():
+    def dev_defaults(request: Request):
+        if blocked := _dev_only(request):
             return blocked
         meta = REPO_ROOT / "data" / "simgen_run.json"
         as_of = json.loads(meta.read_text(encoding="utf-8"))["end"] if meta.exists() else None
         return {"tenants": get_settings().dev_tenants, "as_of": as_of}
 
     @app.post("/dev/token", include_in_schema=False)
-    def dev_token(body: DevTokenBody):
-        if blocked := _dev_only():
+    def dev_token(body: DevTokenBody, request: Request):
+        if blocked := _dev_only(request):
             return blocked
         s = get_settings()
         if body.tenant not in s.dev_tenants:
