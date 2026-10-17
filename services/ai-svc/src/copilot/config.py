@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     kb_reader_password: str = "kb_reader_dev_pw"
     kb_writer_password: str = "kb_writer_dev_pw"
     jwt_secret: str = "dev-only-secret-change-me-0123456789abcdef"
+    ollama_url: str = "http://127.0.0.1:11434"
+    ollama_timeout_s: float = 60.0
+    embed_model: str = "nomic-embed-text"
+    reranker_model: str = "BAAI/bge-reranker-base"
 
     def password_for(self, role: str) -> str:
         if role not in ROLES:
