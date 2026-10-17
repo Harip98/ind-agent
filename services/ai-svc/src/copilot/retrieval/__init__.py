@@ -29,40 +29,36 @@ class Hit:
     is_current: bool
     score: float
     stale: bool = False
-
-
-def _twin_key(h: Hit) -> tuple[str, str, str]:
-    """Same section across versions: same doc, number and leading heading word (renumbering-safe)."""
-    words = h.heading.split()
-    return h.doc_id, h.section_no, words[0].lower() if words else ""
+    replaced_by: str | None = None  # superseded sections: successor section id; None = content removed
 
 
 def select_hits(candidates: list[Hit], k: int) -> list[Hit]:
-    """Best chunk per section; superseded sections only when nothing current covers them."""
+    """Best chunk per section. A superseded section is returned only if its content was removed in
+    the current version (replaced_by is None) and it outscores every current hit; it is flagged stale.
+    Superseded sections that have a successor are never returned: the current version covers them."""
     best: dict[str, Hit] = {}
-    for h in sorted(candidates, key=lambda h: h.score, reverse=True):
+    for h in sorted(candidates, key=lambda h: (-h.score, h.section_id)):
         best.setdefault(h.section_id, h)
     current = [h for h in best.values() if h.is_current]
-    covered = {_twin_key(h) for h in current}
     top_current = max((h.score for h in current), default=float("-inf"))
     stale = [
         replace(h, stale=True)
         for h in best.values()
-        if not h.is_current and _twin_key(h) not in covered and h.score > top_current
+        if not h.is_current and h.replaced_by is None and h.score > top_current
     ]
-    return sorted(current + stale, key=lambda h: h.score, reverse=True)[:k]
+    return sorted(current + stale, key=lambda h: (-h.score, h.section_id))[:k]
 
 
 _SELECT = """
 SELECT c.id AS chunk_id, c.section_id, s.doc_id, s.version, s.section_no, s.heading, d.title,
-       c.content, c.tenant_id, c.is_current, {score} AS score
+       c.content, c.tenant_id, c.is_current, {score} AS score, s.replaced_by
 FROM kb.chunks c
 JOIN kb.sections s ON s.tenant_id = c.tenant_id AND s.id = c.section_id
 JOIN kb.documents d ON d.tenant_id = s.tenant_id AND d.id = s.doc_id
 WHERE c.tenant_id IN (%(shared)s, %(tenant)s)
   AND (%(model)s::text IS NULL OR c.asset_models && ARRAY[%(model)s::text, 'ANY'])
   {extra}
-ORDER BY {order}
+ORDER BY {order}, c.id
 LIMIT %(n)s
 """
 
@@ -77,7 +73,7 @@ class Retriever:
         query: str,
         asset_model: str | None = None,
         k: int = 5,
-        strategy: str = "hybrid_rerank",
+        strategy: str = "hybrid",
     ) -> list[Hit]:
         if strategy not in STRATEGIES:
             raise ValueError(f"unknown strategy {strategy!r}")

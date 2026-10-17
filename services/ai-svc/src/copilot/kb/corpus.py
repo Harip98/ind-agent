@@ -16,6 +16,7 @@ _FRONT = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 _TITLE = re.compile(r"^#\s+(.+?)\s*$")
 _HEADING = re.compile(r"^#{2,4}\s+(\d+(?:\.\d+)*)\s+(.+?)\s*$")
 _REQUIRED = ("doc_id", "version", "doc_type", "effective_date", "tenant", "asset_models", "license")
+_TENANT = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class CorpusError(ValueError):
@@ -27,6 +28,7 @@ class Section:
     section_no: str
     heading: str
     text: str
+    replaced_by: str | None = None  # superseded versions only: successor section_no, None = removed
 
 
 @dataclass(frozen=True)
@@ -101,6 +103,16 @@ def parse_document(path: Path, root: Path) -> DocVersion:
         raise CorpusError(f"{path.name}: asset_models must be a non-empty list")
     if len(numbers) != len(set(numbers)):
         raise CorpusError(f"{path.name}: duplicate section numbers")
+    tenant = str(meta["tenant"])
+    if tenant != SHARED and (not _TENANT.match(tenant) or tenant == "shared"):
+        raise CorpusError(f"{path.name}: tenant must be '{SHARED}' or a tenant id, got {tenant!r}")
+    if superseded is not None:
+        mapping = meta.get("replaced_by")
+        if not isinstance(mapping, dict) or set(mapping) != set(numbers) or not all(
+                isinstance(k, str) and (v is None or isinstance(v, str)) for k, v in mapping.items()):
+            raise CorpusError(f"{path.name}: superseded versions need replaced_by mapping every section "
+                              f"number (quoted strings) to its successor section or null")
+        sections = [Section(s.section_no, s.heading, s.text, mapping[s.section_no]) for s in sections]
     if not [s for s in sections if s.section_no != "0"]:
         raise CorpusError(f"{path.name}: no numbered sections")
 
@@ -109,7 +121,7 @@ def parse_document(path: Path, root: Path) -> DocVersion:
         version=version,
         title=title,
         doc_type=str(meta["doc_type"]),
-        tenant_id=str(meta["tenant"]),
+        tenant_id=tenant,
         effective_date=meta["effective_date"],
         superseded_by=superseded,
         asset_models=tuple(models),
@@ -153,13 +165,26 @@ def load_corpus(root: Path) -> list[DocVersion]:
             raise CorpusError(f"{d.source_path}: duplicate of {seen[key]}")
         seen[key] = d.source_path
         by_id.setdefault(d.doc_id, []).append(d)
+        parts = Path(d.source_path).parts
+        if len(parts) > 1:
+            expected = SHARED if parts[0] == "shared" else parts[0]
+            if d.tenant_id != expected:
+                raise CorpusError(f"{d.source_path}: tenant {d.tenant_id!r} does not match folder {parts[0]!r}")
     for doc_id, versions in by_id.items():
         if sum(v.is_current for v in versions) != 1:
             raise CorpusError(f"{doc_id}: exactly one current version required")
         if len({v.tenant_id for v in versions}) != 1:
             raise CorpusError(f"{doc_id}: versions disagree on tenant")
         numbers = {v.version for v in versions}
+        by_version = {v.version: v for v in versions}
         for v in versions:
-            if v.superseded_by is not None and v.superseded_by not in numbers:
+            if v.superseded_by is None:
+                continue
+            if v.superseded_by not in numbers:
                 raise CorpusError(f"{doc_id} v{v.version}: superseded_by {v.superseded_by} missing")
+            successor = {s.section_no for s in by_version[v.superseded_by].sections}
+            for s in v.sections:
+                if s.replaced_by is not None and s.replaced_by not in successor:
+                    raise CorpusError(f"{doc_id} v{v.version} §{s.section_no}: replaced_by "
+                                      f"{s.replaced_by} not in v{v.superseded_by}")
     return docs

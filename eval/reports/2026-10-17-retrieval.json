@@ -3,7 +3,7 @@
   {
    "id": "N01",
    "category": "normal",
-   "ms": 2914.071100007277,
+   "ms": 120.24889996973798,
    "ranked": [
     "SOP-PUMP-07@v2#4.1",
     "MAN-CP200@v1#5",
@@ -20,7 +20,7 @@
   {
    "id": "N02",
    "category": "normal",
-   "ms": 60.24349998915568,
+   "ms": 95.79370002029464,
    "ranked": [
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#5.1",
@@ -37,7 +37,7 @@
   {
    "id": "N03",
    "category": "normal",
-   "ms": 71.6348999994807,
+   "ms": 89.34659999795258,
    "ranked": [
     "SOP-PUMP-07@v2#4.2",
     "SOP-PUMP-07@v2#4.1",
@@ -54,7 +54,7 @@
   {
    "id": "N04",
    "category": "normal",
-   "ms": 3750.3887999919243,
+   "ms": 120.71829999331385,
    "ranked": [
     "SOP-PUMP-07@v2#4.3",
     "SOP-PUMP-07@v2#4.1",
@@ -71,7 +71,7 @@
   {
    "id": "N05",
    "category": "normal",
-   "ms": 45.94549996545538,
+   "ms": 87.22430001944304,
    "ranked": [
     "SOP-PUMP-11@v1#4.1",
     "SOP-PUMP-07@v2#4.4",
@@ -88,7 +88,7 @@
   {
    "id": "N06",
    "category": "normal",
-   "ms": 3435.7861999887973,
+   "ms": 106.31930001545697,
    "ranked": [
     "SOP-PUMP-11@v1#4.2",
     "SOP-PUMP-11@v1#2",
@@ -105,7 +105,7 @@
   {
    "id": "N07",
    "category": "normal",
-   "ms": 94.25159997772425,
+   "ms": 90.44990001711994,
    "ranked": [
     "SOP-PUMP-11@v1#3.1",
     "SOP-PUMP-11@v1#4.1",
@@ -122,7 +122,7 @@
   {
    "id": "N08",
    "category": "normal",
-   "ms": 99.46200001286343,
+   "ms": 83.92989996355027,
    "ranked": [
     "SOP-PUMP-11@v1#3.2",
     "SOP-PUMP-11@v1#4.2",
@@ -139,7 +139,7 @@
   {
    "id": "N09",
    "category": "normal",
-   "ms": 3948.595200025011,
+   "ms": 104.7961000003852,
    "ranked": [
     "MAN-CP200@v1#3",
     "SOP-PUMP-07@v2#5.2",
@@ -156,7 +156,7 @@
   {
    "id": "N10",
    "category": "normal",
-   "ms": 79.03299998724833,
+   "ms": 85.43179999105632,
    "ranked": [
     "MAN-CP200@v1#4",
     "SOP-PUMP-07@v2#5.2",
@@ -173,7 +173,7 @@
   {
    "id": "N11",
    "category": "normal",
-   "ms": 85.42180003132671,
+   "ms": 79.31249996181577,
    "ranked": [
     "SOP-PUMP-07@v2#3",
     "MAN-CP200@v1#2",
@@ -190,7 +190,7 @@
   {
    "id": "N12",
    "category": "normal",
-   "ms": 86.41419996274635,
+   "ms": 83.22129998123273,
    "ranked": [
     "SOP-CW-02@v1#3",
     "SOP-CW-02@v1#2",
@@ -207,7 +207,7 @@
   {
    "id": "N13",
    "category": "normal",
-   "ms": 92.14399999473244,
+   "ms": 86.88560000155121,
    "ranked": [
     "SOP-CW-02@v1#4",
     "SOP-CW-02@v1#5",
@@ -224,7 +224,7 @@
   {
    "id": "N14",
    "category": "normal",
-   "ms": 82.02380000147969,
+   "ms": 87.10910001536831,
    "ranked": [
     "SOP-AC-05@v2#3",
     "SOP-AC-05@v2#4.1",
@@ -241,7 +241,7 @@
   {
    "id": "N15",
    "category": "normal",
-   "ms": 77.04190001823008,
+   "ms": 80.3029999951832,
    "ranked": [
     "SOP-AC-05@v2#5",
     "SOP-AC-05@v2#4.1",
@@ -258,24 +258,24 @@
   {
    "id": "N16",
    "category": "normal",
-   "ms": 79.14860005257651,
+   "ms": 85.44980001170188,
    "ranked": [
-    "SOP-AC-05@v1#4.2",
     "SOP-AC-05@v2#4.3",
     "SOP-AC-05@v2#2",
     "SOP-AC-05@v2#1",
-    "SOP-AC-05@v2#3"
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#6"
    ],
    "recall": 1.0,
-   "mrr": 0.5,
-   "ndcg": 0.6309297535714575,
+   "mrr": 1.0,
+   "ndcg": 1.0,
    "leak": false,
-   "stale_in_top5": true
+   "stale_in_top5": false
   },
   {
    "id": "N17",
    "category": "normal",
-   "ms": 81.14480000222102,
+   "ms": 61.49679998634383,
    "ranked": [
     "SOP-AC-05@v2#2",
     "SOP-AC-05@v2#4.2",
@@ -292,7 +292,7 @@
   {
    "id": "N18",
    "category": "normal",
-   "ms": 80.54950000951067,
+   "ms": 83.89820001320913,
    "ranked": [
     "GUIDE-ALARM-01@v1#2",
     "GUIDE-ALARM-01@v1#4",
@@ -309,7 +309,7 @@
   {
    "id": "N19",
    "category": "normal",
-   "ms": 83.96990003529936,
+   "ms": 59.08919998910278,
    "ranked": [
     "GUIDE-ALARM-01@v1#4",
     "GUIDE-ALARM-01@v1#3",
@@ -326,7 +326,7 @@
   {
    "id": "N20",
    "category": "normal",
-   "ms": 59.6637999988161,
+   "ms": 67.35450000269338,
    "ranked": [
     "GUIDE-ALARM-01@v1#3",
     "GUIDE-ALARM-01@v1#2",
@@ -343,7 +343,7 @@
   {
    "id": "N21",
    "category": "normal",
-   "ms": 70.66440000198781,
+   "ms": 71.79750001523644,
    "ranked": [
     "SOP-INST-03@v3#3",
     "SOP-INST-03@v3#2",
@@ -360,7 +360,7 @@
   {
    "id": "N22",
    "category": "normal",
-   "ms": 63.56869998853654,
+   "ms": 64.15220000781119,
    "ranked": [
     "SOP-INST-03@v3#4",
     "SOP-INST-03@v3#5",
@@ -377,7 +377,7 @@
   {
    "id": "N23",
    "category": "normal",
-   "ms": 69.4935999927111,
+   "ms": 66.18770002387464,
    "ranked": [
     "SOP-PUMP-07@v2#2",
     "BULLETIN-VEND-14@v1#4",
@@ -394,7 +394,7 @@
   {
    "id": "N24",
    "category": "normal",
-   "ms": 71.33770000655204,
+   "ms": 57.02130001736805,
    "ranked": [
     "SOP-PUMP-11@v1#2",
     "SOP-PUMP-11@v1#4.2",
@@ -411,7 +411,7 @@
   {
    "id": "N25",
    "category": "normal",
-   "ms": 65.20890002138913,
+   "ms": 63.70629998855293,
    "ranked": [
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#5.1",
@@ -428,7 +428,7 @@
   {
    "id": "N26",
    "category": "normal",
-   "ms": 72.40840001031756,
+   "ms": 60.97509997198358,
    "ranked": [
     "SOP-PUMP-07@v2#6",
     "SOP-PUMP-07@v2#5.2",
@@ -443,9 +443,77 @@
    "stale_in_top5": false
   },
   {
+   "id": "N27",
+   "category": "normal",
+   "ms": 63.672900025267154,
+   "ranked": [
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N28",
+   "category": "normal",
+   "ms": 59.02869999408722,
+   "ranked": [
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N29",
+   "category": "normal",
+   "ms": 75.41600003605708,
+   "ranked": [
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N30",
+   "category": "normal",
+   "ms": 65.84559998009354,
+   "ranked": [
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
    "id": "S01",
    "category": "stale",
-   "ms": 80.62010002322495,
+   "ms": 65.83120004506782,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
     "MAN-CP200@v1#3",
@@ -460,26 +528,9 @@
    "stale_in_top5": true
   },
   {
-   "id": "S02",
-   "category": "stale",
-   "ms": 66.32409995654598,
-   "ranked": [
-    "SOP-INST-03@v2#4",
-    "SOP-INST-03@v3#5",
-    "SOP-INST-03@v3#4",
-    "SOP-INST-03@v3#1",
-    "SOP-INST-03@v3#2"
-   ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
-   "leak": false,
-   "stale_in_top5": true
-  },
-  {
    "id": "S03",
    "category": "stale",
-   "ms": 67.59699998656288,
+   "ms": 59.34959999285638,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#4.3",
@@ -496,7 +547,7 @@
   {
    "id": "S04",
    "category": "stale",
-   "ms": 71.20040000882,
+   "ms": 60.63750002067536,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#4.3",
@@ -513,7 +564,7 @@
   {
    "id": "S05",
    "category": "stale",
-   "ms": 74.69550002133474,
+   "ms": 66.44570000935346,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
     "GUIDE-ALARM-01@v1#4",
@@ -530,7 +581,7 @@
   {
    "id": "T01",
    "category": "tenant_local",
-   "ms": 3791.664899967145,
+   "ms": 92.56860002642497,
    "ranked": [
     "SOP-ACME-LOC-01@v1#2",
     "SOP-ACME-LOC-01@v1#1",
@@ -547,7 +598,7 @@
   {
    "id": "T02",
    "category": "tenant_local",
-   "ms": 88.88659998774529,
+   "ms": 66.26209995010868,
    "ranked": [
     "SOP-ACME-LOC-01@v1#3",
     "SOP-ACME-LOC-01@v1#2",
@@ -564,7 +615,7 @@
   {
    "id": "T03",
    "category": "tenant_local",
-   "ms": 92.14500000234693,
+   "ms": 59.38310001511127,
    "ranked": [
     "SOP-ACME-LOC-01@v1#4",
     "SOP-ACME-LOC-01@v1#2",
@@ -581,7 +632,7 @@
   {
    "id": "T04",
    "category": "tenant_local",
-   "ms": 82.69339997787029,
+   "ms": 64.3802999984473,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#2",
     "SOP-GLOBEX-LOC-01@v1#1",
@@ -598,7 +649,7 @@
   {
    "id": "T05",
    "category": "tenant_local",
-   "ms": 84.93860001908615,
+   "ms": 56.53390003135428,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#3",
     "SOP-GLOBEX-LOC-01@v1#1",
@@ -615,7 +666,7 @@
   {
    "id": "X01",
    "category": "cross_tenant",
-   "ms": 90.08769999491051,
+   "ms": 60.83749997196719,
    "ranked": [
     "SOP-PUMP-07@v2#5.1",
     "SOP-PUMP-07@v2#4.1",
@@ -623,16 +674,16 @@
     "SOP-PUMP-07@v2#2",
     "MAN-CP200@v1#2"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X02",
    "category": "cross_tenant",
-   "ms": 92.85999997518957,
+   "ms": 63.08069999795407,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#2",
     "SOP-PUMP-11@v1#3.3",
@@ -640,16 +691,16 @@
     "SOP-GLOBEX-LOC-01@v1#4",
     "SOP-PUMP-07@v2#5.1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X03",
    "category": "cross_tenant",
-   "ms": 86.78949996829033,
+   "ms": 61.358499980997294,
    "ranked": [
     "SOP-ACME-LOC-01@v1#3",
     "SOP-PUMP-11@v1#3.3",
@@ -657,16 +708,16 @@
     "SOP-ACME-LOC-01@v1#2",
     "MAN-CP200@v1#1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X04",
    "category": "cross_tenant",
-   "ms": 86.18389995535836,
+   "ms": 60.583700018469244,
    "ranked": [
     "SOP-ACME-LOC-01@v1#2",
     "SOP-PUMP-07@v2#4.4",
@@ -674,9 +725,9 @@
     "BULLETIN-VEND-14@v1#2",
     "SOP-PUMP-11@v1#3.3"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   }
@@ -685,13 +736,13 @@
   {
    "id": "N01",
    "category": "normal",
-   "ms": 95.946500019636,
+   "ms": 67.31239997316152,
    "ranked": [
     "SOP-PUMP-07@v2#4.1",
     "MAN-CP200@v1#5",
-    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#3",
     "SOP-PUMP-07@v2#5.1",
-    "SOP-PUMP-07@v2#3"
+    "SOP-PUMP-07@v2#4.2"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -702,7 +753,7 @@
   {
    "id": "N02",
    "category": "normal",
-   "ms": 94.00599997024983,
+   "ms": 71.94350002100691,
    "ranked": [
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#4.1",
@@ -719,13 +770,13 @@
   {
    "id": "N03",
    "category": "normal",
-   "ms": 97.05420001409948,
+   "ms": 74.83239995781332,
    "ranked": [
     "SOP-PUMP-07@v2#4.2",
     "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#1",
     "SOP-PUMP-07@v2#3",
-    "SOP-PUMP-07@v2#4.3",
-    "SOP-PUMP-07@v2#1"
+    "SOP-PUMP-07@v2#4.3"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -736,7 +787,7 @@
   {
    "id": "N04",
    "category": "normal",
-   "ms": 90.7658000360243,
+   "ms": 65.40210003731772,
    "ranked": [
     "SOP-PUMP-07@v2#4.3",
     "SOP-PUMP-07@v2#4.1",
@@ -753,13 +804,13 @@
   {
    "id": "N05",
    "category": "normal",
-   "ms": 93.99650001432747,
+   "ms": 70.04989997949451,
    "ranked": [
     "SOP-PUMP-11@v1#4.1",
     "SOP-PUMP-07@v2#4.4",
     "SOP-PUMP-11@v1#3.1",
     "SOP-PUMP-11@v1#5",
-    "SOP-PUMP-07@v2#4.1"
+    "SOP-PUMP-07@v2#5.1"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -770,30 +821,30 @@
   {
    "id": "N06",
    "category": "normal",
-   "ms": 88.19130004849285,
+   "ms": 66.02639995981008,
    "ranked": [
-    "SOP-PUMP-11@v1#4.2",
     "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-11@v1#4.2",
     "SOP-PUMP-07@v2#4.4",
     "SOP-PUMP-07@v2#6",
-    "SOP-PUMP-11@v1#1"
+    "SOP-GLOBEX-LOC-01@v1#4"
    ],
    "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "N07",
    "category": "normal",
-   "ms": 92.3909000121057,
+   "ms": 88.99710001423955,
    "ranked": [
     "SOP-PUMP-11@v1#3.1",
     "SOP-PUMP-07@v2#4.1",
     "SOP-PUMP-07@v2#4.4",
     "SOP-PUMP-07@v2#4.2",
-    "SOP-PUMP-11@v1#4.2"
+    "SOP-PUMP-11@v1#4.1"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -804,30 +855,30 @@
   {
    "id": "N08",
    "category": "normal",
-   "ms": 101.3397999922745,
+   "ms": 87.6012000371702,
    "ranked": [
-    "SOP-PUMP-11@v1#3.2",
     "SOP-PUMP-07@v2#1",
-    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-11@v1#3.2",
     "SOP-GLOBEX-LOC-01@v1#3",
-    "SOP-PUMP-07@v2#4.1"
+    "MAN-CP200@v1#1",
+    "SOP-PUMP-07@v2#4.2"
    ],
    "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "N09",
    "category": "normal",
-   "ms": 97.09400002611801,
+   "ms": 93.9790999982506,
    "ranked": [
     "MAN-CP200@v1#3",
-    "SOP-PUMP-07@v2#5.2",
     "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.2",
     "SOP-PUMP-07@v2#3",
-    "SOP-PUMP-07@v2#2"
+    "SOP-PUMP-07@v2#4.3"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -838,12 +889,12 @@
   {
    "id": "N10",
    "category": "normal",
-   "ms": 90.57739999843761,
+   "ms": 87.35310001065955,
    "ranked": [
     "MAN-CP200@v1#4",
-    "SOP-PUMP-07@v2#5.2",
-    "SOP-PUMP-07@v2#4.2",
     "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.2",
     "SOP-PUMP-07@v2#3"
    ],
    "recall": 1.0,
@@ -855,7 +906,7 @@
   {
    "id": "N11",
    "category": "normal",
-   "ms": 85.87050001369789,
+   "ms": 81.26819995231926,
    "ranked": [
     "SOP-PUMP-07@v2#3",
     "MAN-CP200@v1#2",
@@ -872,7 +923,7 @@
   {
    "id": "N12",
    "category": "normal",
-   "ms": 97.47109998716041,
+   "ms": 66.71520002419129,
    "ranked": [
     "SOP-CW-02@v1#3",
     "SOP-CW-02@v1#2",
@@ -889,7 +940,7 @@
   {
    "id": "N13",
    "category": "normal",
-   "ms": 90.74549999786541,
+   "ms": 70.52609999664128,
    "ranked": [
     "SOP-CW-02@v1#4",
     "SOP-CW-02@v1#3",
@@ -906,30 +957,30 @@
   {
    "id": "N14",
    "category": "normal",
-   "ms": 93.30740000586957,
+   "ms": 66.77979999221861,
    "ranked": [
     "SOP-AC-05@v2#3",
-    "SOP-AC-05@v2#4.1",
     "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.1",
     "SOP-AC-05@v2#1",
     "SOP-AC-05@v2#6"
    ],
    "recall": 1.0,
-   "mrr": 0.5,
-   "ndcg": 0.6309297535714575,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "N15",
    "category": "normal",
-   "ms": 80.17450000625104,
+   "ms": 69.62869997369125,
    "ranked": [
     "SOP-AC-05@v2#4.1",
     "SOP-AC-05@v2#5",
     "SOP-AC-05@v2#4.2",
-    "SOP-AC-05@v2#4.3",
-    "SOP-AC-05@v2#1"
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.3"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -940,7 +991,7 @@
   {
    "id": "N16",
    "category": "normal",
-   "ms": 82.19280000776052,
+   "ms": 79.0563999908045,
    "ranked": [
     "SOP-AC-05@v2#4.3",
     "SOP-AC-05@v2#2",
@@ -957,13 +1008,13 @@
   {
    "id": "N17",
    "category": "normal",
-   "ms": 69.54469997435808,
+   "ms": 112.73190000792965,
    "ranked": [
     "SOP-AC-05@v2#2",
-    "SOP-AC-05@v2#4.2",
     "SOP-AC-05@v2#1",
-    "SOP-AC-05@v2#3",
-    "SOP-AC-05@v2#4.3"
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#5"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -974,7 +1025,7 @@
   {
    "id": "N18",
    "category": "normal",
-   "ms": 73.58389999717474,
+   "ms": 87.49740000348538,
    "ranked": [
     "GUIDE-ALARM-01@v1#2",
     "GUIDE-ALARM-01@v1#4",
@@ -991,24 +1042,24 @@
   {
    "id": "N19",
    "category": "normal",
-   "ms": 77.40360003663227,
+   "ms": 65.98610000219196,
    "ranked": [
-    "GUIDE-ALARM-01@v1#4",
     "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
     "GUIDE-ALARM-01@v1#3",
     "GUIDE-ALARM-01@v1#1",
     "SOP-INST-03@v3#2"
    ],
    "recall": 1.0,
-   "mrr": 0.5,
-   "ndcg": 0.6309297535714575,
+   "mrr": 1.0,
+   "ndcg": 1.0,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "N20",
    "category": "normal",
-   "ms": 75.94489998882636,
+   "ms": 74.80289996601641,
    "ranked": [
     "GUIDE-ALARM-01@v1#3",
     "GUIDE-ALARM-01@v1#4",
@@ -1025,30 +1076,30 @@
   {
    "id": "N21",
    "category": "normal",
-   "ms": 75.08239999879152,
+   "ms": 81.98709995485842,
    "ranked": [
-    "SOP-INST-03@v3#3",
     "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#3",
     "SOP-PUMP-07@v2#4.3",
     "BULLETIN-VEND-14@v1#4",
     "SOP-PUMP-07@v2#3"
    ],
    "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "N22",
    "category": "normal",
-   "ms": 73.24890000745654,
+   "ms": 74.03179997345433,
    "ranked": [
     "SOP-INST-03@v3#4",
     "SOP-INST-03@v3#1",
     "SOP-PUMP-07@v2#4.3",
-    "SOP-INST-03@v3#5",
-    "SOP-INST-03@v3#2"
+    "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#5"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1059,13 +1110,13 @@
   {
    "id": "N23",
    "category": "normal",
-   "ms": 72.01289996737614,
+   "ms": 67.07459996687248,
    "ranked": [
     "SOP-PUMP-07@v2#2",
     "MAN-CP200@v1#5",
-    "SOP-PUMP-07@v2#6",
     "SOP-PUMP-07@v2#4.3",
-    "SOP-PUMP-07@v2#5.2"
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-07@v2#4.2"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1076,12 +1127,12 @@
   {
    "id": "N24",
    "category": "normal",
-   "ms": 77.45009998325258,
+   "ms": 69.27350000478327,
    "ranked": [
     "SOP-PUMP-11@v1#2",
     "SOP-PUMP-11@v1#4.2",
-    "SOP-PUMP-11@v1#4",
     "SOP-PUMP-11@v1#1",
+    "SOP-PUMP-11@v1#4",
     "SOP-PUMP-11@v1#5"
    ],
    "recall": 1.0,
@@ -1093,7 +1144,7 @@
   {
    "id": "N25",
    "category": "normal",
-   "ms": 72.4898999906145,
+   "ms": 77.53680000314489,
    "ranked": [
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#4.1",
@@ -1110,13 +1161,81 @@
   {
    "id": "N26",
    "category": "normal",
-   "ms": 76.00290002301335,
+   "ms": 68.14869999652728,
    "ranked": [
     "SOP-PUMP-07@v2#6",
     "SOP-PUMP-07@v2#4.2",
-    "SOP-PUMP-07@v2#5.2",
-    "SOP-PUMP-07@v2#4.3",
-    "MAN-CP200@v1#5"
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#2",
+    "SOP-PUMP-07@v2#5.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N27",
+   "category": "normal",
+   "ms": 72.30239995988086,
+   "ranked": [
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N28",
+   "category": "normal",
+   "ms": 71.76820002496243,
+   "ranked": [
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N29",
+   "category": "normal",
+   "ms": 71.47540000732988,
+   "ranked": [
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N30",
+   "category": "normal",
+   "ms": 72.27290002629161,
+   "ranked": [
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#3",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.1"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1127,30 +1246,13 @@
   {
    "id": "S01",
    "category": "stale",
-   "ms": 76.58490003086627,
+   "ms": 78.63120001275092,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
-    "SOP-PUMP-07@v2#3",
     "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#3",
     "SOP-PUMP-07@v2#1",
-    "SOP-PUMP-07@v2#5.2"
-   ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
-   "leak": false,
-   "stale_in_top5": true
-  },
-  {
-   "id": "S02",
-   "category": "stale",
-   "ms": 75.50560001982376,
-   "ranked": [
-    "SOP-INST-03@v2#4",
-    "SOP-INST-03@v3#5",
-    "SOP-INST-03@v3#4",
-    "SOP-INST-03@v3#1",
-    "SOP-INST-03@v3#3"
+    "MAN-CP200@v1#2"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1161,12 +1263,12 @@
   {
    "id": "S03",
    "category": "stale",
-   "ms": 77.23410002654418,
+   "ms": 71.2121999822557,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#4.3",
-    "SOP-AC-05@v2#5",
     "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#5",
     "SOP-AC-05@v2#6"
    ],
    "recall": 1.0,
@@ -1178,7 +1280,7 @@
   {
    "id": "S04",
    "category": "stale",
-   "ms": 71.62859995150939,
+   "ms": 65.97940000938252,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#4.3",
@@ -1195,12 +1297,12 @@
   {
    "id": "S05",
    "category": "stale",
-   "ms": 75.22880000760779,
+   "ms": 77.89889996638522,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
     "MAN-CP200@v1#3",
-    "GUIDE-ALARM-01@v1#4",
     "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
     "GUIDE-ALARM-01@v1#3"
    ],
    "recall": 1.0,
@@ -1212,13 +1314,13 @@
   {
    "id": "T01",
    "category": "tenant_local",
-   "ms": 69.45850001648068,
+   "ms": 69.9019999592565,
    "ranked": [
     "SOP-ACME-LOC-01@v1#2",
     "SOP-ACME-LOC-01@v1#1",
     "SOP-PUMP-07@v2#4.1",
     "MAN-CP200@v1#5",
-    "SOP-PUMP-07@v2#5.1"
+    "SOP-ACME-LOC-01@v1#3"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1229,7 +1331,7 @@
   {
    "id": "T02",
    "category": "tenant_local",
-   "ms": 70.1822999981232,
+   "ms": 88.12890003900975,
    "ranked": [
     "SOP-ACME-LOC-01@v1#3",
     "SOP-ACME-LOC-01@v1#2",
@@ -1246,13 +1348,13 @@
   {
    "id": "T03",
    "category": "tenant_local",
-   "ms": 77.15570001164451,
+   "ms": 87.75840001180768,
    "ranked": [
     "SOP-ACME-LOC-01@v1#4",
     "SOP-ACME-LOC-01@v1#2",
     "SOP-ACME-LOC-01@v1#1",
     "MAN-CP200@v1#5",
-    "SOP-PUMP-07@v2#5.1"
+    "SOP-PUMP-07@v2#4.1"
    ],
    "recall": 1.0,
    "mrr": 1.0,
@@ -1263,7 +1365,7 @@
   {
    "id": "T04",
    "category": "tenant_local",
-   "ms": 87.02510001603514,
+   "ms": 108.60689997207373,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#2",
     "SOP-GLOBEX-LOC-01@v1#1",
@@ -1280,7 +1382,7 @@
   {
    "id": "T05",
    "category": "tenant_local",
-   "ms": 72.26600003195927,
+   "ms": 103.98549999808893,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#3",
     "SOP-GLOBEX-LOC-01@v1#2",
@@ -1297,24 +1399,24 @@
   {
    "id": "X01",
    "category": "cross_tenant",
-   "ms": 73.64279998000711,
+   "ms": 88.03699997952208,
    "ranked": [
     "SOP-PUMP-07@v2#4.1",
     "SOP-PUMP-07@v2#5.1",
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#2",
-    "SOP-PUMP-07@v2#3"
+    "MAN-CP200@v1#2"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X02",
    "category": "cross_tenant",
-   "ms": 98.8519000238739,
+   "ms": 86.2714999821037,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#2",
     "SOP-PUMP-11@v1#3.3",
@@ -1322,43 +1424,43 @@
     "SOP-GLOBEX-LOC-01@v1#3",
     "SOP-PUMP-07@v2#5.1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X03",
    "category": "cross_tenant",
-   "ms": 93.12420000787824,
+   "ms": 93.49360002670437,
    "ranked": [
     "SOP-ACME-LOC-01@v1#3",
     "SOP-PUMP-11@v1#3.3",
     "SOP-PUMP-11@v1#3.2",
-    "SOP-PUMP-07@v2#5.1",
-    "SOP-ACME-LOC-01@v1#4"
+    "SOP-ACME-LOC-01@v1#4",
+    "MAN-CP200@v1#1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X04",
    "category": "cross_tenant",
-   "ms": 104.68310001306236,
+   "ms": 87.37289998680353,
    "ranked": [
     "SOP-PUMP-07@v2#4.4",
-    "SOP-PUMP-07@v2#4.1",
     "SOP-ACME-LOC-01@v1#2",
-    "SOP-PUMP-11@v1#3.3",
-    "SOP-PUMP-11@v1#3.1"
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#6"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   }
@@ -1367,7 +1469,7 @@
   {
    "id": "N01",
    "category": "normal",
-   "ms": 229459.47269996395,
+   "ms": 26780.027800006792,
    "ranked": [
     "SOP-PUMP-07@v2#4.1",
     "SOP-PUMP-07@v2#3",
@@ -1384,7 +1486,7 @@
   {
    "id": "N02",
    "category": "normal",
-   "ms": 3887.850500002969,
+   "ms": 3957.2032000287436,
    "ranked": [
     "SOP-PUMP-07@v2#5.1",
     "MAN-CP200@v1#5",
@@ -1401,7 +1503,7 @@
   {
    "id": "N03",
    "category": "normal",
-   "ms": 4015.226099989377,
+   "ms": 3465.5998999951407,
    "ranked": [
     "SOP-PUMP-07@v2#4.2",
     "SOP-PUMP-07@v2#4.1",
@@ -1418,7 +1520,7 @@
   {
    "id": "N04",
    "category": "normal",
-   "ms": 4191.565899993293,
+   "ms": 3444.1314000287093,
    "ranked": [
     "SOP-PUMP-07@v2#4.3",
     "SOP-INST-03@v3#2",
@@ -1435,7 +1537,7 @@
   {
    "id": "N05",
    "category": "normal",
-   "ms": 4093.185400008224,
+   "ms": 3772.851100016851,
    "ranked": [
     "SOP-PUMP-07@v2#4.4",
     "SOP-PUMP-11@v1#4.1",
@@ -1452,7 +1554,7 @@
   {
    "id": "N06",
    "category": "normal",
-   "ms": 2861.6058999905363,
+   "ms": 2288.463499979116,
    "ranked": [
     "SOP-PUMP-11@v1#2",
     "SOP-PUMP-11@v1#4.2",
@@ -1469,7 +1571,7 @@
   {
    "id": "N07",
    "category": "normal",
-   "ms": 3756.3739000470378,
+   "ms": 4167.534199950751,
    "ranked": [
     "SOP-PUMP-11@v1#3.1",
     "SOP-PUMP-07@v2#4.2",
@@ -1486,7 +1588,7 @@
   {
    "id": "N08",
    "category": "normal",
-   "ms": 3291.937100002542,
+   "ms": 4312.223700049799,
    "ranked": [
     "SOP-PUMP-11@v1#3.2",
     "SOP-PUMP-07@v2#1",
@@ -1503,7 +1605,7 @@
   {
    "id": "N09",
    "category": "normal",
-   "ms": 2913.828899967484,
+   "ms": 3188.7594000436366,
    "ranked": [
     "MAN-CP200@v1#3",
     "SOP-PUMP-07@v2#4.2",
@@ -1520,7 +1622,7 @@
   {
    "id": "N10",
    "category": "normal",
-   "ms": 3486.1206999630667,
+   "ms": 3523.2944000163116,
    "ranked": [
     "MAN-CP200@v1#4",
     "MAN-CP200@v1#2",
@@ -1537,7 +1639,7 @@
   {
    "id": "N11",
    "category": "normal",
-   "ms": 4205.106799956411,
+   "ms": 3491.6927999584004,
    "ranked": [
     "SOP-PUMP-07@v2#3",
     "MAN-CP200@v1#2",
@@ -1554,7 +1656,7 @@
   {
    "id": "N12",
    "category": "normal",
-   "ms": 2780.3724000114016,
+   "ms": 2476.013100007549,
    "ranked": [
     "SOP-CW-02@v1#3",
     "SOP-CW-02@v1#2",
@@ -1571,7 +1673,7 @@
   {
    "id": "N13",
    "category": "normal",
-   "ms": 2343.1322999531403,
+   "ms": 2312.525999965146,
    "ranked": [
     "SOP-CW-02@v1#4",
     "SOP-CW-02@v1#1",
@@ -1588,7 +1690,7 @@
   {
    "id": "N14",
    "category": "normal",
-   "ms": 2375.099600001704,
+   "ms": 3027.2444000001997,
    "ranked": [
     "SOP-AC-05@v2#4.1",
     "SOP-AC-05@v2#3",
@@ -1605,7 +1707,7 @@
   {
    "id": "N15",
    "category": "normal",
-   "ms": 2190.153500007,
+   "ms": 2703.546699951403,
    "ranked": [
     "SOP-AC-05@v2#4.1",
     "SOP-AC-05@v2#5",
@@ -1622,7 +1724,7 @@
   {
    "id": "N16",
    "category": "normal",
-   "ms": 2679.9993999884464,
+   "ms": 2441.7089000344276,
    "ranked": [
     "SOP-AC-05@v2#4.3",
     "SOP-AC-05@v2#1",
@@ -1639,7 +1741,7 @@
   {
    "id": "N17",
    "category": "normal",
-   "ms": 2474.5455000083894,
+   "ms": 2327.828999958001,
    "ranked": [
     "SOP-AC-05@v2#2",
     "SOP-AC-05@v2#4.2",
@@ -1656,7 +1758,7 @@
   {
    "id": "N18",
    "category": "normal",
-   "ms": 3447.268299991265,
+   "ms": 3183.5641999496147,
    "ranked": [
     "GUIDE-ALARM-01@v1#2",
     "SOP-PUMP-07@v2#5.3",
@@ -1673,7 +1775,7 @@
   {
    "id": "N19",
    "category": "normal",
-   "ms": 3347.2532999585383,
+   "ms": 3145.9946999675594,
    "ranked": [
     "GUIDE-ALARM-01@v1#2",
     "GUIDE-ALARM-01@v1#3",
@@ -1690,7 +1792,7 @@
   {
    "id": "N20",
    "category": "normal",
-   "ms": 3691.769099968951,
+   "ms": 3464.555900020059,
    "ranked": [
     "GUIDE-ALARM-01@v1#3",
     "GUIDE-ALARM-01@v1#2",
@@ -1707,7 +1809,7 @@
   {
    "id": "N21",
    "category": "normal",
-   "ms": 3775.5685000447556,
+   "ms": 3890.371099987533,
    "ranked": [
     "SOP-INST-03@v3#3",
     "SOP-INST-03@v3#2",
@@ -1724,7 +1826,7 @@
   {
    "id": "N22",
    "category": "normal",
-   "ms": 3764.334199950099,
+   "ms": 4146.551799960434,
    "ranked": [
     "SOP-INST-03@v3#4",
     "SOP-PUMP-07@v2#4.3",
@@ -1741,7 +1843,7 @@
   {
    "id": "N23",
    "category": "normal",
-   "ms": 3326.784899982158,
+   "ms": 3565.4241000302136,
    "ranked": [
     "SOP-PUMP-07@v2#2",
     "SOP-PUMP-07@v2#4.3",
@@ -1758,7 +1860,7 @@
   {
    "id": "N24",
    "category": "normal",
-   "ms": 3580.0296000088565,
+   "ms": 3409.154799999669,
    "ranked": [
     "SOP-PUMP-11@v1#2",
     "SOP-PUMP-11@v1#5",
@@ -1775,7 +1877,7 @@
   {
    "id": "N25",
    "category": "normal",
-   "ms": 3925.5754000041634,
+   "ms": 3624.132099968847,
    "ranked": [
     "SOP-ACME-LOC-01@v1#4",
     "SOP-PUMP-07@v2#5.1",
@@ -1792,7 +1894,7 @@
   {
    "id": "N26",
    "category": "normal",
-   "ms": 3608.481999952346,
+   "ms": 2878.3466999884695,
    "ranked": [
     "SOP-PUMP-07@v2#6",
     "MAN-CP200@v1#5",
@@ -1807,9 +1909,77 @@
    "stale_in_top5": false
   },
   {
+   "id": "N27",
+   "category": "normal",
+   "ms": 2953.6849999567494,
+   "ranked": [
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N28",
+   "category": "normal",
+   "ms": 4290.989900007844,
+   "ranked": [
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#3",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N29",
+   "category": "normal",
+   "ms": 2331.6802000044845,
+   "ranked": [
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N30",
+   "category": "normal",
+   "ms": 3605.3604999906383,
+   "ranked": [
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#5",
+    "SOP-PUMP-07@v2#5.3",
+    "SOP-INST-03@v3#2"
+   ],
+   "recall": 1.0,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
    "id": "S01",
    "category": "stale",
-   "ms": 2818.0148000246845,
+   "ms": 2956.449799996335,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
     "MAN-CP200@v1#3",
@@ -1824,26 +1994,9 @@
    "stale_in_top5": true
   },
   {
-   "id": "S02",
-   "category": "stale",
-   "ms": 3440.691399970092,
-   "ranked": [
-    "SOP-INST-03@v2#4",
-    "SOP-INST-03@v3#1",
-    "SOP-INST-03@v3#4",
-    "SOP-INST-03@v3#5",
-    "SOP-PUMP-07@v2#5.3"
-   ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
-   "leak": false,
-   "stale_in_top5": true
-  },
-  {
    "id": "S03",
    "category": "stale",
-   "ms": 2452.761299966369,
+   "ms": 2382.0749999722466,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#6",
@@ -1860,7 +2013,7 @@
   {
    "id": "S04",
    "category": "stale",
-   "ms": 2673.5924999811687,
+   "ms": 2580.749700020533,
    "ranked": [
     "SOP-AC-05@v1#4.3",
     "SOP-AC-05@v2#2",
@@ -1877,7 +2030,7 @@
   {
    "id": "S05",
    "category": "stale",
-   "ms": 3614.0647000283934,
+   "ms": 3334.7283999901265,
    "ranked": [
     "SOP-PUMP-07@v1#5.3",
     "MAN-CP200@v1#3",
@@ -1894,7 +2047,7 @@
   {
    "id": "T01",
    "category": "tenant_local",
-   "ms": 3701.213899999857,
+   "ms": 3885.5143999680877,
    "ranked": [
     "SOP-ACME-LOC-01@v1#2",
     "SOP-ACME-LOC-01@v1#1",
@@ -1911,7 +2064,7 @@
   {
    "id": "T02",
    "category": "tenant_local",
-   "ms": 3314.449199999217,
+   "ms": 3762.4095999635756,
    "ranked": [
     "SOP-ACME-LOC-01@v1#3",
     "SOP-ACME-LOC-01@v1#4",
@@ -1928,7 +2081,7 @@
   {
    "id": "T03",
    "category": "tenant_local",
-   "ms": 3408.671499986667,
+   "ms": 3867.920699995011,
    "ranked": [
     "SOP-ACME-LOC-01@v1#4",
     "SOP-ACME-LOC-01@v1#2",
@@ -1945,7 +2098,7 @@
   {
    "id": "T04",
    "category": "tenant_local",
-   "ms": 3594.343300035689,
+   "ms": 3358.257899992168,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#1",
     "SOP-GLOBEX-LOC-01@v1#2",
@@ -1962,7 +2115,7 @@
   {
    "id": "T05",
    "category": "tenant_local",
-   "ms": 3322.4580999813043,
+   "ms": 3394.977900024969,
    "ranked": [
     "SOP-GLOBEX-LOC-01@v1#3",
     "SOP-GLOBEX-LOC-01@v1#1",
@@ -1979,7 +2132,7 @@
   {
    "id": "X01",
    "category": "cross_tenant",
-   "ms": 4119.041699974332,
+   "ms": 3995.5791999818757,
    "ranked": [
     "SOP-PUMP-07@v2#5.1",
     "SOP-PUMP-07@v2#2",
@@ -1987,16 +2140,16 @@
     "MAN-CP200@v1#5",
     "SOP-PUMP-07@v2#4.1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X02",
    "category": "cross_tenant",
-   "ms": 4369.021499995142,
+   "ms": 4026.965399971232,
    "ranked": [
     "SOP-PUMP-07@v2#5.1",
     "SOP-GLOBEX-LOC-01@v1#3",
@@ -2004,16 +2157,16 @@
     "SOP-PUMP-11@v1#3.3",
     "SOP-GLOBEX-LOC-01@v1#1"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X03",
    "category": "cross_tenant",
-   "ms": 3596.022700017784,
+   "ms": 3535.4895999771543,
    "ranked": [
     "SOP-PUMP-11@v1#3.3",
     "SOP-ACME-LOC-01@v1#3",
@@ -2021,16 +2174,16 @@
     "SOP-ACME-LOC-01@v1#4",
     "SOP-PUMP-11@v1#3.2"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   },
   {
    "id": "X04",
    "category": "cross_tenant",
-   "ms": 3370.7520999596454,
+   "ms": 3688.040999986697,
    "ranked": [
     "SOP-PUMP-07@v2#4.1",
     "SOP-PUMP-11@v1#3.3",
@@ -2038,9 +2191,9 @@
     "SOP-PUMP-11@v1#4.2",
     "MAN-CP200@v1#2"
    ],
-   "recall": 1.0,
-   "mrr": 1.0,
-   "ndcg": 1.0,
+   "recall": null,
+   "mrr": null,
+   "ndcg": null,
    "leak": false,
    "stale_in_top5": false
   }

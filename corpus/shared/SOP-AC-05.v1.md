@@ -7,6 +7,7 @@ superseded_by: 2
 tenant: _shared
 asset_models: [AC-75]
 license: self-authored
+replaced_by: {'1': '1', '2': '2', '3': '3', '4': '4', '4.1': '4.1', '4.2': '4.3', '4.3': null, '5': '6'}
 ---
 # AC-75 Compressor High Discharge Temperature
 

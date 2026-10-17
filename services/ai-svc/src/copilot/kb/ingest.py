@@ -14,6 +14,7 @@ class IngestStats:
     written: int
     skipped: int
     chunks: int
+    removed: int = 0
 
 
 def _scope(conn: psycopg.Connection, tenant_id: str) -> None:
@@ -39,7 +40,9 @@ def _delete_version(conn: psycopg.Connection, tenant_id: str, doc_id: str, versi
     )
 
 
-def ingest(docs: list[DocVersion], settings: Settings, embedder: Embedder) -> IngestStats:
+def ingest(docs: list[DocVersion], settings: Settings, embedder: Embedder, prune: bool = False) -> IngestStats:
+    """Write changed versions. With prune=True, also delete versions that are no longer in `docs`
+    (deleted files, or documents moved to another tenant) for every tenant the corpus mentions."""
     written = skipped = chunks = 0
     with psycopg.connect(settings.dsn("kb_writer")) as conn:
         for doc in docs:
@@ -69,11 +72,15 @@ def ingest(docs: list[DocVersion], settings: Settings, embedder: Embedder) -> In
                 )
                 for section in doc.sections:
                     section_id = doc.section_id(section)
+                    successor = (
+                        f"{doc.doc_id}@v{doc.superseded_by}#{section.replaced_by}"
+                        if doc.superseded_by is not None and section.replaced_by is not None else None
+                    )
                     conn.execute(
                         "INSERT INTO kb.sections (tenant_id, id, doc_id, version, section_no,"
-                        " heading, text) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        " heading, text, replaced_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                         (doc.tenant_id, section_id, doc.doc_id, doc.version, section.section_no,
-                         section.heading, section.text),
+                         section.heading, section.text, successor),
                     )
                     parts = chunk_section(doc, section)
                     vectors = embedder.embed_documents([c.content for c in parts])
@@ -89,7 +96,30 @@ def ingest(docs: list[DocVersion], settings: Settings, embedder: Embedder) -> In
                         )
                     chunks += len(parts)
                 written += 1
-    return IngestStats(written, skipped, chunks)
+    removed = _prune(docs, settings) if prune else 0
+    return IngestStats(written, skipped, chunks, removed)
+
+
+def _prune(docs: list[DocVersion], settings: Settings) -> int:
+    keep = {(d.tenant_id, d.doc_id, d.version) for d in docs}
+    removed = 0
+    with psycopg.connect(settings.dsn("kb_writer")) as conn:
+        for tenant_id in sorted({SHARED} | {d.tenant_id for d in docs}):
+            with conn.transaction():
+                _scope(conn, tenant_id)
+                rows = conn.execute(
+                    "SELECT doc_id, version FROM kb.doc_versions WHERE tenant_id = %s", (tenant_id,)
+                ).fetchall()
+                for doc_id, version in rows:
+                    if (tenant_id, doc_id, version) not in keep:
+                        _delete_version(conn, tenant_id, doc_id, version)
+                        removed += 1
+                conn.execute(
+                    "DELETE FROM kb.documents d WHERE d.tenant_id = %s AND NOT EXISTS ("
+                    " SELECT 1 FROM kb.doc_versions v WHERE v.tenant_id = d.tenant_id AND v.doc_id = d.id)",
+                    (tenant_id,),
+                )
+    return removed
 
 
 def delete_documents(settings: Settings, doc_ids: list[str], tenant_id: str) -> None:

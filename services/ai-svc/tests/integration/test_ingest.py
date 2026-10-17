@@ -20,7 +20,7 @@ superseded_by: {sup}
 tenant: {tenant}
 asset_models: [CP-200]
 license: self-authored
----
+{extra}---
 # {doc_id} title
 
 ## 1 Scope
@@ -38,7 +38,8 @@ def _corpus(tmp_path: Path, body: str = "Check the cooling water valve.") -> Pat
         ("ITEST-KB-A", 1, "null", "itest_a"),
     ]:
         (root / f"{doc_id}.v{version}.md").write_bytes(
-            DOC.format(doc_id=doc_id, version=version, sup=sup, tenant=tenant, body=body).encode()
+            DOC.format(doc_id=doc_id, version=version, sup=sup, tenant=tenant, body=body,
+                       extra="" if sup == "null" else "replaced_by: {'1': '1'}\n").encode()
         )
     return root
 
@@ -76,6 +77,24 @@ def test_changing_embedder_reembeds(settings, tmp_path, clean):
     other = HashEmbedder(dims=768)
     other.name = "another-model"
     assert ingest(load_corpus(root), settings, other).written == 3
+
+
+def test_prune_removes_moved_and_deleted_documents(settings, tmp_path, clean):
+    root = _corpus(tmp_path)
+    move = root / "ITEST-KB-MOVE.v1.md"
+    move.write_bytes(DOC.format(doc_id="ITEST-KB-MOVE", version=1, sup="null", tenant="_shared",
+                                body="Shared by mistake.", extra="").encode())
+    ingest(load_corpus(root), settings, HashEmbedder(), prune=True)
+    assert any(r[1] == "ITEST-KB-MOVE@v1#1" for r in _rows(settings, "itest_b"))
+    move.write_bytes(move.read_bytes().replace(b"tenant: _shared", b"tenant: itest_a"))
+    stats = ingest(load_corpus(root), settings, HashEmbedder(), prune=True)
+    assert stats.removed == 1
+    assert not any(r[1] == "ITEST-KB-MOVE@v1#1" for r in _rows(settings, "itest_b"))
+    assert ("itest_a", "ITEST-KB-MOVE@v1#1", True) in _rows(settings, "itest_a")
+    move.unlink()
+    assert ingest(load_corpus(root), settings, HashEmbedder(), prune=True).removed == 1
+    assert not any(r[1].startswith("ITEST-KB-MOVE") for r in _rows(settings, "itest_a"))
+    delete_documents(settings, ["ITEST-KB-MOVE"], "itest_a")
 
 
 def test_ingest_is_idempotent_and_detects_changes(settings, tmp_path, clean):

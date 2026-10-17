@@ -86,9 +86,9 @@ def ingest(
     embedder = HashEmbedder() if fake_embeddings else OllamaEmbedder(
         OllamaClient(settings.ollama_url, settings.ollama_timeout_s), settings.embed_model)
     docs = load_corpus(path)
-    stats = run_ingest(docs, settings, embedder)
+    stats = run_ingest(docs, settings, embedder, prune=True)
     typer.echo(f"{len(docs)} versions: {stats.written} written ({stats.chunks} chunks), "
-               f"{stats.skipped} unchanged")
+               f"{stats.skipped} unchanged, {stats.removed} removed")
 
 
 def _retriever(settings, fake_embeddings: bool = False):
@@ -107,7 +107,7 @@ def search(
     query: str,
     tenant: str = typer.Option(..., help="Tenant id."),
     model: str | None = typer.Option(None, help="Asset model filter, e.g. CP-200."),
-    strategy: str = typer.Option("hybrid_rerank", help="vector | hybrid | hybrid_rerank"),
+    strategy: str = typer.Option("hybrid", help="vector | hybrid | hybrid_rerank"),
     k: int = typer.Option(5),
 ) -> None:
     """Search the knowledge base as a tenant."""

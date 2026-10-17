@@ -22,8 +22,8 @@ def test_ndcg_perfect_and_partial():
     assert ndcg_at_k(["x", "a"], {"a"}, k=5) == pytest.approx(1 / math.log2(3))
 
 
-def test_empty_gold_is_vacuous():
-    assert recall_at_k(["a"], set()) == 1.0 and mrr(["a"], set()) == 1.0
+def test_empty_gold_is_not_scored():
+    assert recall_at_k(["a"], set()) is None and mrr(["a"], set()) is None and ndcg_at_k(["a"], set()) is None
 
 
 def test_repo_dataset_gold_sections_exist_and_respect_tenancy():

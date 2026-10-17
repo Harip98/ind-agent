@@ -24,8 +24,11 @@
 {"id": "N24", "tenant": "globex", "asset_model": "CP-200", "query": "restart checks after cavitation or dry running", "gold": ["SOP-PUMP-11@v1#5"], "category": "normal"}
 {"id": "N25", "tenant": "acme", "asset_model": "CP-200", "query": "pump bearing cooling water system flow rate and strainer", "gold": ["MAN-CP200@v1#5"], "category": "normal"}
 {"id": "N26", "tenant": "acme", "asset_model": "CP-200", "query": "monitoring after returning the pump to service following bearing work", "gold": ["SOP-PUMP-07@v2#6"], "category": "normal"}
+{"id": "N27", "tenant": "acme", "asset_model": "AC-75", "query": "compressor restart and return to service after the discharge temperature trip", "gold": ["SOP-AC-05@v2#6"], "category": "normal"}
+{"id": "N28", "tenant": "acme", "asset_model": "CP-200", "query": "how should I calibrate a temperature transmitter", "gold": ["SOP-INST-03@v3#5"], "category": "normal"}
+{"id": "N29", "tenant": "globex", "asset_model": "AC-75", "query": "check the compressor oil level and the thermostatic valve", "gold": ["SOP-AC-05@v2#4.3"], "category": "normal"}
+{"id": "N30", "tenant": "acme", "asset_model": "CP-200", "query": "two-point transmitter calibration with an ice bath and boiling water", "gold": ["SOP-INST-03@v3#5"], "category": "normal"}
 {"id": "S01", "tenant": "acme", "asset_model": "CP-200", "query": "top up grease at every bearing temperature alarm with the grease gun", "gold": ["SOP-PUMP-07@v1#5.3"], "category": "stale"}
-{"id": "S02", "tenant": "acme", "asset_model": "CP-200", "query": "two-point transmitter calibration with an ice bath and boiling water", "gold": ["SOP-INST-03@v2#4"], "category": "stale"}
 {"id": "S03", "tenant": "globex", "asset_model": "AC-75", "query": "temporarily bypass the thermostatic valve to keep the compressor running", "gold": ["SOP-AC-05@v1#4.3"], "category": "stale"}
 {"id": "S04", "tenant": "acme", "asset_model": "AC-75", "query": "open the manual bypass valve on the oil cooler line until the next planned stop", "gold": ["SOP-AC-05@v1#4.3"], "category": "stale"}
 {"id": "S05", "tenant": "globex", "asset_model": "CP-200", "query": "reset the alarm after two shots of lithium grease and monitor for 15 minutes", "gold": ["SOP-PUMP-07@v1#5.3"], "category": "stale"}

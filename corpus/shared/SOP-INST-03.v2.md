@@ -7,6 +7,7 @@ superseded_by: 3
 tenant: _shared
 asset_models: [CP-200, CL-50, AC-75]
 license: self-authored
+replaced_by: {'1': '1', '2': '2', '3': '4', '4': '5'}
 ---
 # Temperature Transmitter Verification and Calibration
 

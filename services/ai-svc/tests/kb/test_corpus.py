@@ -103,3 +103,39 @@ def test_load_corpus_rejects_two_current_versions(tmp_path):
     _write(tmp_path, DOC.replace("version: 2", "version: 3"), "SOP-TEST-01.v3.md")
     with pytest.raises(CorpusError, match="current"):
         load_corpus(tmp_path)
+
+
+SUPERSEDED = DOC.replace("version: 2", "version: 1").replace("superseded_by: null", "superseded_by: 2")
+
+
+def test_superseded_version_must_map_every_section(tmp_path):
+    with pytest.raises(CorpusError, match="replaced_by"):
+        parse_document(_write(tmp_path, SUPERSEDED, "SOP-TEST-01.v1.md"), tmp_path)
+
+
+def test_replaced_by_is_parsed_per_section(tmp_path):
+    text = SUPERSEDED.replace("license: self-authored\n", "license: self-authored\n"
+                              "replaced_by: {'0': '0', '1': '1', '4': '4', '4.1': null}\n")
+    doc = parse_document(_write(tmp_path, text, "SOP-TEST-01.v1.md"), tmp_path)
+    assert {s.section_no: s.replaced_by for s in doc.sections} == {"0": "0", "1": "1", "4": "4", "4.1": None}
+
+
+def test_replaced_by_target_must_exist_in_successor(tmp_path):
+    text = SUPERSEDED.replace("license: self-authored\n", "license: self-authored\n"
+                              "replaced_by: {'0': '0', '1': '9', '4': '4', '4.1': null}\n")
+    _write(tmp_path, text, "SOP-TEST-01.v1.md")
+    _write(tmp_path, DOC, "SOP-TEST-01.v2.md")
+    with pytest.raises(CorpusError, match="9"):
+        load_corpus(tmp_path)
+
+
+def test_tenant_must_match_folder(tmp_path):
+    (tmp_path / "acme").mkdir()
+    _write(tmp_path / "acme", DOC, "SOP-TEST-01.v2.md")   # front-matter says _shared
+    with pytest.raises(CorpusError, match="folder"):
+        load_corpus(tmp_path)
+
+
+def test_literal_shared_tenant_rejected(tmp_path):
+    with pytest.raises(CorpusError, match="tenant"):
+        parse_document(_write(tmp_path, DOC.replace("tenant: _shared", "tenant: shared")), tmp_path)

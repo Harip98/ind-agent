@@ -67,3 +67,13 @@ def test_vector_search_survives_reingest_churn(settings, retriever):
     hits = retriever.search("acme", "cooling water restriction bearing temperature high",
                             asset_model="CP-200", strategy="vector")
     assert len(hits) == 5
+
+
+@pytest.mark.parametrize("strategy", STRATEGIES)
+def test_renumbered_superseded_section_never_outranks_current(retriever, strategy):
+    """SOP-AC-05 v1 §5 'Return to Service' became v2 §6; only v2 may be returned."""
+    hits = retriever.search("acme", "compressor restart return to service after the discharge temperature trip",
+                            asset_model="AC-75", k=5, strategy=strategy)
+    assert not any(h.stale for h in hits)
+    assert not any(h.doc_id == "SOP-AC-05" and h.version == 1 for h in hits)
+    assert any(h.section_id == "SOP-AC-05@v2#6" for h in hits)

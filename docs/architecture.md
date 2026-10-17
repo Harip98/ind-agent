@@ -276,7 +276,7 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
   version: 3
   effective_date: 2026-03-01
   superseded_by: null
-  tenant: shared        # or a tenant id
+  tenant: _shared       # or a tenant id; must match the folder (shared/ or <tenant>/)
   asset_models: [CP-200]
   license: self-authored
   ```

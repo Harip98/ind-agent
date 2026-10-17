@@ -7,6 +7,7 @@ superseded_by: 2
 tenant: _shared
 asset_models: [CP-200]
 license: self-authored
+replaced_by: {'1': '1', '2': '2', '3': '3', '4': '4', '4.1': '4.1', '4.2': '4.2', '5': '5', '5.1': '5.1', '5.2': '5.2', '5.3': null, '6': '6'}
 ---
 # CP-200 Pump Bearing Temperature High — Troubleshooting
 

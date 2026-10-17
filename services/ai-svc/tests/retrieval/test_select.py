@@ -17,7 +17,8 @@ def test_one_hit_per_section_best_chunk_wins():
 
 
 def test_superseded_twin_is_dropped():
-    hits = select_hits([_hit("D@v1#4.1", 0.95, current=False), _hit("D@v2#4.1", 0.9)], k=5)
+    old = replace(_hit("D@v1#4.1", 0.95, current=False), replaced_by="D@v2#4.1")
+    hits = select_hits([old, _hit("D@v2#4.1", 0.9)], k=5)
     assert [h.section_id for h in hits] == ["D@v2#4.1"]
     assert not hits[0].stale
 
@@ -42,3 +43,15 @@ def test_renumbered_section_is_not_a_twin():
     current = replace(_hit("D@v2#5.3", 0.5), heading="Instrument Fault")
     hits = select_hits([stale, current], k=5)
     assert [(h.section_id, h.stale) for h in hits] == [("D@v1#5.3", True), ("D@v2#5.3", False)]
+
+
+def test_superseded_section_with_successor_is_never_returned():
+    """v1 §5 'Return to Service' was renumbered to v2 §6: the old copy must not outrank or replace it."""
+    old = replace(_hit("D@v1#5", 0.95, current=False), replaced_by="D@v2#6")
+    hits = select_hits([old, _hit("E@v1#1", 0.5)], k=5)
+    assert [h.section_id for h in hits] == ["E@v1#1"]
+
+
+def test_removed_superseded_content_is_stale_only_when_best():
+    removed = replace(_hit("D@v1#5.3", 0.95, current=False), replaced_by=None)
+    assert select_hits([removed, _hit("E@v1#1", 0.5)], k=5)[0].stale
