@@ -70,7 +70,8 @@ TOOLS = [
          "alarm_type": {"type": "string", "enum": list(ALARM_TYPES), "description": "optional filter"}},
         ["asset_id", "start", "end"]),
     _fn("analyze_alarm", "Analyze the readings around one alarm: observations (O#) and ranked candidate causes.",
-        {"alarm_id": {"type": "string"}}, ["alarm_id"]),
+        {"alarm_id": {"type": "string", "description": "a ref such as A1 from find_alarms, or a full alarm id"}},
+        ["alarm_id"]),
     _fn("search_procedures", "Search maintenance procedures for the analyzed alarm's equipment model.",
         {"query": {"type": "string"}}, ["query"]),
     _fn("submit_report", "Submit the final report. It is checked; errors come back for one correction.",
@@ -125,6 +126,7 @@ class Session:
         self.as_of = (req.as_of or datetime.now(UTC)).astimezone(UTC)
         self.searched_assets: set[str] = set()
         self.alarms_seen: list[dict] = []
+        self.alarm_refs: dict[str, str] = {}  # A# -> alarm id, from the latest find_alarms
         self.window: tuple[datetime, datetime] | None = None
         self.asset = self.alarm = self.analysis = None
         self.candidates: list = []
@@ -201,10 +203,14 @@ class Session:
             what = f"{alarm_type} alarms" if alarm_type else "alarms"
             other = f" {len(every)} other alarm(s) exist in that window." if every else ""
             return f"No {what} on {asset_id} between {_local(start, self.tz)} and {_local(end, self.tz)}.{other}"
-        rows = [f"{a.id} | {a.tag} | {a.alarm_type} | {_local(a.raised_at, self.tz)} | {a.message}"
-                for a in alarms[:MAX_ALARM_ROWS]]
+        shown = alarms[:MAX_ALARM_ROWS]
+        # short refs (like O#/D#): small models mangle the long composite ids when copying them
+        self.alarm_refs = {f"A{i}": a.id for i, a in enumerate(shown, start=1)}
+        rows = [f"A{i}: {a.id} | {a.tag} | {a.alarm_type} | {_local(a.raised_at, self.tz)} | {a.message}"
+                for i, a in enumerate(shown, start=1)]
         more = f"\n...and {len(alarms) - MAX_ALARM_ROWS} more" if len(alarms) > MAX_ALARM_ROWS else ""
-        return f"{len(alarms)} alarm(s) (id | tag | type | raised | message):\n" + "\n".join(rows) + more
+        return (f"{len(alarms)} alarm(s) (ref: id | tag | type | raised | message); pass the ref (e.g. A1) "
+                "to analyze_alarm:\n" + "\n".join(rows) + more)
 
     def _alarm(self, alarm_id: str) -> AlarmInfo:
         m = _ALARM_ID.match(alarm_id)
@@ -220,7 +226,12 @@ class Session:
         return alarm
 
     def tool_analyze_alarm(self, args: dict) -> str:
-        alarm_id = _str(args, "alarm_id", limit=140)
+        alarm_id = _str(args, "alarm_id", limit=140).strip()
+        if re.fullmatch(r"A\d{1,3}", alarm_id):
+            if alarm_id not in self.alarm_refs:
+                known = ", ".join(self.alarm_refs) or "none, call find_alarms first"
+                raise ToolError(f"unknown alarm ref {alarm_id}; refs from the latest find_alarms: {known}")
+            alarm_id = self.alarm_refs[alarm_id]
         alarm = self._alarm(alarm_id)
         self.asset = self.assets[_ALARM_ID.match(alarm_id).group(1)]
         self.alarm = alarm

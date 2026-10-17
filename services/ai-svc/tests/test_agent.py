@@ -261,3 +261,17 @@ def test_recommendation_keeps_only_verified_fields(sim, p12_alarm):
     sneaky = {**GOOD_REPORT, "recommendation": {**GOOD_REPORT["recommendation"], "note": "Bypass the interlock."}}
     out, _ = run(sim, happy_prefix(p12_alarm) + [call("submit_report", **sneaky)])
     assert set(out["report"]["recommendation"]) == {"text", "refs"}
+
+
+def test_find_alarms_gives_short_refs_that_analyze_alarm_accepts(sim, p12_alarm):
+    _, llm = run(sim, [call("find_alarms", **window_args()), call("analyze_alarm", alarm_id="A1"),
+                       call("analyze_alarm", alarm_id="A99"), call("ask_clarification", message="?")])
+    r = tool_results(llm)
+    assert "A1: " in r[0] and p12_alarm.id in r[0]
+    assert "Observations:" in r[1]
+    assert r[2].startswith("error:") and "A1" in r[2]
+
+
+def test_short_refs_belong_to_the_latest_search_only(sim):
+    out, llm = run(sim, [call("analyze_alarm", alarm_id="A1"), call("ask_clarification", message="?")])
+    assert tool_results(llm)[0].startswith("error:")
