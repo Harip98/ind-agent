@@ -31,18 +31,24 @@ class Hit:
     stale: bool = False
 
 
+def _twin_key(h: Hit) -> tuple[str, str, str]:
+    """Same section across versions: same doc, number and leading heading word (renumbering-safe)."""
+    words = h.heading.split()
+    return h.doc_id, h.section_no, words[0].lower() if words else ""
+
+
 def select_hits(candidates: list[Hit], k: int) -> list[Hit]:
     """Best chunk per section; superseded sections only when nothing current covers them."""
     best: dict[str, Hit] = {}
     for h in sorted(candidates, key=lambda h: h.score, reverse=True):
         best.setdefault(h.section_id, h)
     current = [h for h in best.values() if h.is_current]
-    covered = {(h.doc_id, h.section_no) for h in current}
+    covered = {_twin_key(h) for h in current}
     top_current = max((h.score for h in current), default=float("-inf"))
     stale = [
         replace(h, stale=True)
         for h in best.values()
-        if not h.is_current and (h.doc_id, h.section_no) not in covered and h.score > top_current
+        if not h.is_current and _twin_key(h) not in covered and h.score > top_current
     ]
     return sorted(current + stale, key=lambda h: h.score, reverse=True)[:k]
 

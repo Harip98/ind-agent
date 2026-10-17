@@ -1,0 +1,2048 @@
+{
+ "vector": [
+  {
+   "id": "N01",
+   "category": "normal",
+   "ms": 2914.071100007277,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N02",
+   "category": "normal",
+   "ms": 60.24349998915568,
+   "ranked": [
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#2",
+    "SOP-ACME-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N03",
+   "category": "normal",
+   "ms": 71.6348999994807,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N04",
+   "category": "normal",
+   "ms": 3750.3887999919243,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 0.5,
+   "mrr": 1.0,
+   "ndcg": 0.6131471927654584,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N05",
+   "category": "normal",
+   "ms": 45.94549996545538,
+   "ranked": [
+    "SOP-PUMP-11@v1#4.1",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-11@v1#5",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N06",
+   "category": "normal",
+   "ms": 3435.7861999887973,
+   "ranked": [
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-11@v1#2",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N07",
+   "category": "normal",
+   "ms": 94.25159997772425,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-11@v1#4.1",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N08",
+   "category": "normal",
+   "ms": 99.46200001286343,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.2",
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-11@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N09",
+   "category": "normal",
+   "ms": 3948.595200025011,
+   "ranked": [
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N10",
+   "category": "normal",
+   "ms": 79.03299998724833,
+   "ranked": [
+    "MAN-CP200@v1#4",
+    "SOP-PUMP-07@v2#5.2",
+    "MAN-CP200@v1#2",
+    "MAN-CP200@v1#1",
+    "SOP-PUMP-07@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N11",
+   "category": "normal",
+   "ms": 85.42180003132671,
+   "ranked": [
+    "SOP-PUMP-07@v2#3",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#1",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N12",
+   "category": "normal",
+   "ms": 86.41419996274635,
+   "ranked": [
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#2",
+    "SOP-CW-02@v1#5",
+    "SOP-CW-02@v1#4",
+    "SOP-CW-02@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N13",
+   "category": "normal",
+   "ms": 92.14399999473244,
+   "ranked": [
+    "SOP-CW-02@v1#4",
+    "SOP-CW-02@v1#5",
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#1",
+    "SOP-CW-02@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N14",
+   "category": "normal",
+   "ms": 82.02380000147969,
+   "ranked": [
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N15",
+   "category": "normal",
+   "ms": 77.04190001823008,
+   "ranked": [
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N16",
+   "category": "normal",
+   "ms": 79.14860005257651,
+   "ranked": [
+    "SOP-AC-05@v1#4.2",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "N17",
+   "category": "normal",
+   "ms": 81.14480000222102,
+   "ranked": [
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#4.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N18",
+   "category": "normal",
+   "ms": 80.54950000951067,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N19",
+   "category": "normal",
+   "ms": 83.96990003529936,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#2",
+    "SOP-INST-03@v3#2",
+    "GUIDE-ALARM-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N20",
+   "category": "normal",
+   "ms": 59.6637999988161,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
+    "SOP-PUMP-07@v2#5.3",
+    "GUIDE-ALARM-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N21",
+   "category": "normal",
+   "ms": 70.66440000198781,
+   "ranked": [
+    "SOP-INST-03@v3#3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#4.3",
+    "BULLETIN-VEND-14@v1#4",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N22",
+   "category": "normal",
+   "ms": 63.56869998853654,
+   "ranked": [
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#2",
+    "SOP-INST-03@v3#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N23",
+   "category": "normal",
+   "ms": 69.4935999927111,
+   "ranked": [
+    "SOP-PUMP-07@v2#2",
+    "BULLETIN-VEND-14@v1#4",
+    "SOP-PUMP-07@v2#6",
+    "BULLETIN-VEND-14@v1#2",
+    "MAN-CP200@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N24",
+   "category": "normal",
+   "ms": 71.33770000655204,
+   "ranked": [
+    "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-11@v1#5",
+    "SOP-PUMP-11@v1#4",
+    "SOP-PUMP-11@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N25",
+   "category": "normal",
+   "ms": 65.20890002138913,
+   "ranked": [
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-ACME-LOC-01@v1#4"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N26",
+   "category": "normal",
+   "ms": 72.40840001031756,
+   "ranked": [
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.3",
+    "MAN-CP200@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "S01",
+   "category": "stale",
+   "ms": 80.62010002322495,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S02",
+   "category": "stale",
+   "ms": 66.32409995654598,
+   "ranked": [
+    "SOP-INST-03@v2#4",
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S03",
+   "category": "stale",
+   "ms": 67.59699998656288,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S04",
+   "category": "stale",
+   "ms": 71.20040000882,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S05",
+   "category": "stale",
+   "ms": 74.69550002133474,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "GUIDE-ALARM-01@v1#4",
+    "MAN-CP200@v1#3",
+    "GUIDE-ALARM-01@v1#3",
+    "SOP-PUMP-07@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "T01",
+   "category": "tenant_local",
+   "ms": 3791.664899967145,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#1",
+    "SOP-ACME-LOC-01@v1#5",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T02",
+   "category": "tenant_local",
+   "ms": 88.88659998774529,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T03",
+   "category": "tenant_local",
+   "ms": 92.14500000234693,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#1",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-ACME-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T04",
+   "category": "tenant_local",
+   "ms": 82.69339997787029,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-GLOBEX-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T05",
+   "category": "tenant_local",
+   "ms": 84.93860001908615,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X01",
+   "category": "cross_tenant",
+   "ms": 90.08769999491051,
+   "ranked": [
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#2",
+    "MAN-CP200@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X02",
+   "category": "cross_tenant",
+   "ms": 92.85999997518957,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X03",
+   "category": "cross_tenant",
+   "ms": 86.78949996829033,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-PUMP-11@v1#3.2",
+    "SOP-ACME-LOC-01@v1#2",
+    "MAN-CP200@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X04",
+   "category": "cross_tenant",
+   "ms": 86.18389995535836,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#5.1",
+    "BULLETIN-VEND-14@v1#2",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  }
+ ],
+ "hybrid": [
+  {
+   "id": "N01",
+   "category": "normal",
+   "ms": 95.946500019636,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N02",
+   "category": "normal",
+   "ms": 94.00599997024983,
+   "ranked": [
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#2",
+    "SOP-ACME-LOC-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N03",
+   "category": "normal",
+   "ms": 97.05420001409948,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N04",
+   "category": "normal",
+   "ms": 90.7658000360243,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 0.8772153153380493,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N05",
+   "category": "normal",
+   "ms": 93.99650001432747,
+   "ranked": [
+    "SOP-PUMP-11@v1#4.1",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-11@v1#5",
+    "SOP-PUMP-07@v2#4.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N06",
+   "category": "normal",
+   "ms": 88.19130004849285,
+   "ranked": [
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-11@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N07",
+   "category": "normal",
+   "ms": 92.3909000121057,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-11@v1#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N08",
+   "category": "normal",
+   "ms": 101.3397999922745,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.2",
+    "SOP-PUMP-07@v2#1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-PUMP-07@v2#4.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N09",
+   "category": "normal",
+   "ms": 97.09400002611801,
+   "ranked": [
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N10",
+   "category": "normal",
+   "ms": 90.57739999843761,
+   "ranked": [
+    "MAN-CP200@v1#4",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.2",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N11",
+   "category": "normal",
+   "ms": 85.87050001369789,
+   "ranked": [
+    "SOP-PUMP-07@v2#3",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N12",
+   "category": "normal",
+   "ms": 97.47109998716041,
+   "ranked": [
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#2",
+    "SOP-CW-02@v1#4",
+    "SOP-CW-02@v1#1",
+    "SOP-CW-02@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N13",
+   "category": "normal",
+   "ms": 90.74549999786541,
+   "ranked": [
+    "SOP-CW-02@v1#4",
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#5",
+    "SOP-CW-02@v1#1",
+    "SOP-CW-02@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N14",
+   "category": "normal",
+   "ms": 93.30740000586957,
+   "ranked": [
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N15",
+   "category": "normal",
+   "ms": 80.17450000625104,
+   "ranked": [
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N16",
+   "category": "normal",
+   "ms": 82.19280000776052,
+   "ranked": [
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N17",
+   "category": "normal",
+   "ms": 69.54469997435808,
+   "ranked": [
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#4.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N18",
+   "category": "normal",
+   "ms": 73.58389999717474,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N19",
+   "category": "normal",
+   "ms": 77.40360003663227,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#1",
+    "SOP-INST-03@v3#2"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N20",
+   "category": "normal",
+   "ms": 75.94489998882636,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#2",
+    "SOP-PUMP-07@v2#5.3",
+    "GUIDE-ALARM-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N21",
+   "category": "normal",
+   "ms": 75.08239999879152,
+   "ranked": [
+    "SOP-INST-03@v3#3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#4.3",
+    "BULLETIN-VEND-14@v1#4",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N22",
+   "category": "normal",
+   "ms": 73.24890000745654,
+   "ranked": [
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N23",
+   "category": "normal",
+   "ms": 72.01289996737614,
+   "ranked": [
+    "SOP-PUMP-07@v2#2",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-PUMP-07@v2#5.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N24",
+   "category": "normal",
+   "ms": 77.45009998325258,
+   "ranked": [
+    "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-11@v1#4",
+    "SOP-PUMP-11@v1#1",
+    "SOP-PUMP-11@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 0.2,
+   "ndcg": 0.38685280723454163,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N25",
+   "category": "normal",
+   "ms": 72.4898999906145,
+   "ranked": [
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N26",
+   "category": "normal",
+   "ms": 76.00290002301335,
+   "ranked": [
+    "SOP-PUMP-07@v2#6",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.3",
+    "MAN-CP200@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "S01",
+   "category": "stale",
+   "ms": 76.58490003086627,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "SOP-PUMP-07@v2#3",
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#1",
+    "SOP-PUMP-07@v2#5.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S02",
+   "category": "stale",
+   "ms": 75.50560001982376,
+   "ranked": [
+    "SOP-INST-03@v2#4",
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S03",
+   "category": "stale",
+   "ms": 77.23410002654418,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#6"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S04",
+   "category": "stale",
+   "ms": 71.62859995150939,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S05",
+   "category": "stale",
+   "ms": 75.22880000760779,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "MAN-CP200@v1#3",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "T01",
+   "category": "tenant_local",
+   "ms": 69.45850001648068,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#1",
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T02",
+   "category": "tenant_local",
+   "ms": 70.1822999981232,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T03",
+   "category": "tenant_local",
+   "ms": 77.15570001164451,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T04",
+   "category": "tenant_local",
+   "ms": 87.02510001603514,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T05",
+   "category": "tenant_local",
+   "ms": 72.26600003195927,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X01",
+   "category": "cross_tenant",
+   "ms": 73.64279998000711,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#5.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#2",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X02",
+   "category": "cross_tenant",
+   "ms": 98.8519000238739,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X03",
+   "category": "cross_tenant",
+   "ms": 93.12420000787824,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-PUMP-11@v1#3.2",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-ACME-LOC-01@v1#4"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X04",
+   "category": "cross_tenant",
+   "ms": 104.68310001306236,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-PUMP-11@v1#3.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  }
+ ],
+ "hybrid_rerank": [
+  {
+   "id": "N01",
+   "category": "normal",
+   "ms": 229459.47269996395,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#3",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.1",
+    "MAN-CP200@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N02",
+   "category": "normal",
+   "ms": 3887.850500002969,
+   "ranked": [
+    "SOP-PUMP-07@v2#5.1",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#2",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N03",
+   "category": "normal",
+   "ms": 4015.226099989377,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#4",
+    "SOP-PUMP-11@v1#3.1",
+    "MAN-CP200@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N04",
+   "category": "normal",
+   "ms": 4191.565899993293,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N05",
+   "category": "normal",
+   "ms": 4093.185400008224,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-11@v1#4.1",
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N06",
+   "category": "normal",
+   "ms": 2861.6058999905363,
+   "ranked": [
+    "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-07@v2#4.4",
+    "SOP-PUMP-11@v1#1",
+    "SOP-PUMP-07@v2#2"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N07",
+   "category": "normal",
+   "ms": 3756.3739000470378,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#4",
+    "SOP-PUMP-11@v1#4.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N08",
+   "category": "normal",
+   "ms": 3291.937100002542,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.2",
+    "SOP-PUMP-07@v2#1",
+    "SOP-PUMP-11@v1#1",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-GLOBEX-LOC-01@v1#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N09",
+   "category": "normal",
+   "ms": 2913.828899967484,
+   "ranked": [
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.2",
+    "MAN-CP200@v1#1",
+    "MAN-CP200@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N10",
+   "category": "normal",
+   "ms": 3486.1206999630667,
+   "ranked": [
+    "MAN-CP200@v1#4",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N11",
+   "category": "normal",
+   "ms": 4205.106799956411,
+   "ranked": [
+    "SOP-PUMP-07@v2#3",
+    "MAN-CP200@v1#2",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N12",
+   "category": "normal",
+   "ms": 2780.3724000114016,
+   "ranked": [
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#2",
+    "SOP-CW-02@v1#5",
+    "SOP-CW-02@v1#4",
+    "SOP-INST-03@v3#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N13",
+   "category": "normal",
+   "ms": 2343.1322999531403,
+   "ranked": [
+    "SOP-CW-02@v1#4",
+    "SOP-CW-02@v1#1",
+    "SOP-CW-02@v1#3",
+    "SOP-CW-02@v1#5",
+    "SOP-CW-02@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N14",
+   "category": "normal",
+   "ms": 2375.099600001704,
+   "ranked": [
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#3",
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N15",
+   "category": "normal",
+   "ms": 2190.153500007,
+   "ranked": [
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#2",
+    "SOP-INST-03@v3#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N16",
+   "category": "normal",
+   "ms": 2679.9993999884464,
+   "ranked": [
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N17",
+   "category": "normal",
+   "ms": 2474.5455000083894,
+   "ranked": [
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.2",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#1",
+    "SOP-AC-05@v2#3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N18",
+   "category": "normal",
+   "ms": 3447.268299991265,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#2",
+    "SOP-PUMP-07@v2#5.3",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#3",
+    "SOP-INST-03@v3#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N19",
+   "category": "normal",
+   "ms": 3347.2532999585383,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#4",
+    "GUIDE-ALARM-01@v1#1",
+    "SOP-INST-03@v3#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N20",
+   "category": "normal",
+   "ms": 3691.769099968951,
+   "ranked": [
+    "GUIDE-ALARM-01@v1#3",
+    "GUIDE-ALARM-01@v1#2",
+    "GUIDE-ALARM-01@v1#4",
+    "SOP-PUMP-07@v2#5.3",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N21",
+   "category": "normal",
+   "ms": 3775.5685000447556,
+   "ranked": [
+    "SOP-INST-03@v3#3",
+    "SOP-INST-03@v3#2",
+    "SOP-PUMP-07@v2#4.3",
+    "BULLETIN-VEND-14@v1#4",
+    "SOP-INST-03@v3#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N22",
+   "category": "normal",
+   "ms": 3764.334199950099,
+   "ranked": [
+    "SOP-INST-03@v3#4",
+    "SOP-PUMP-07@v2#4.3",
+    "SOP-INST-03@v3#3",
+    "SOP-INST-03@v3#5",
+    "SOP-INST-03@v3#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N23",
+   "category": "normal",
+   "ms": 3326.784899982158,
+   "ranked": [
+    "SOP-PUMP-07@v2#2",
+    "SOP-PUMP-07@v2#4.3",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.1",
+    "MAN-CP200@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N24",
+   "category": "normal",
+   "ms": 3580.0296000088565,
+   "ranked": [
+    "SOP-PUMP-11@v1#2",
+    "SOP-PUMP-11@v1#5",
+    "SOP-PUMP-11@v1#4.2",
+    "SOP-PUMP-11@v1#1",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N25",
+   "category": "normal",
+   "ms": 3925.5754000041634,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-ACME-LOC-01@v1#3",
+    "MAN-CP200@v1#5"
+   ],
+   "recall": 1.0,
+   "mrr": 0.2,
+   "ndcg": 0.38685280723454163,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "N26",
+   "category": "normal",
+   "ms": 3608.481999952346,
+   "ranked": [
+    "SOP-PUMP-07@v2#6",
+    "MAN-CP200@v1#5",
+    "MAN-CP200@v1#2",
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#4.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "S01",
+   "category": "stale",
+   "ms": 2818.0148000246845,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "MAN-CP200@v1#3",
+    "SOP-PUMP-07@v2#4.2",
+    "SOP-PUMP-07@v2#5.2",
+    "SOP-PUMP-07@v2#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S02",
+   "category": "stale",
+   "ms": 3440.691399970092,
+   "ranked": [
+    "SOP-INST-03@v2#4",
+    "SOP-INST-03@v3#1",
+    "SOP-INST-03@v3#4",
+    "SOP-INST-03@v3#5",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S03",
+   "category": "stale",
+   "ms": 2452.761299966369,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#6",
+    "SOP-AC-05@v2#5",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S04",
+   "category": "stale",
+   "ms": 2673.5924999811687,
+   "ranked": [
+    "SOP-AC-05@v1#4.3",
+    "SOP-AC-05@v2#2",
+    "SOP-AC-05@v2#4.3",
+    "SOP-AC-05@v2#4.1",
+    "SOP-AC-05@v2#5"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "S05",
+   "category": "stale",
+   "ms": 3614.0647000283934,
+   "ranked": [
+    "SOP-PUMP-07@v1#5.3",
+    "MAN-CP200@v1#3",
+    "GUIDE-ALARM-01@v1#2",
+    "SOP-PUMP-11@v1#5",
+    "SOP-PUMP-07@v2#5.3"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": true
+  },
+  {
+   "id": "T01",
+   "category": "tenant_local",
+   "ms": 3701.213899999857,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#1",
+    "SOP-ACME-LOC-01@v1#5",
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#4"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T02",
+   "category": "tenant_local",
+   "ms": 3314.449199999217,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-ACME-LOC-01@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T03",
+   "category": "tenant_local",
+   "ms": 3408.671499986667,
+   "ranked": [
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-ACME-LOC-01@v1#2",
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-ACME-LOC-01@v1#1",
+    "SOP-PUMP-07@v2#5.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T04",
+   "category": "tenant_local",
+   "ms": 3594.343300035689,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-GLOBEX-LOC-01@v1#2",
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-11@v1#3.3"
+   ],
+   "recall": 1.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "T05",
+   "category": "tenant_local",
+   "ms": 3322.4580999813043,
+   "ranked": [
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-GLOBEX-LOC-01@v1#1",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-GLOBEX-LOC-01@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X01",
+   "category": "cross_tenant",
+   "ms": 4119.041699974332,
+   "ranked": [
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-PUMP-07@v2#2",
+    "BULLETIN-VEND-14@v1#3",
+    "MAN-CP200@v1#5",
+    "SOP-PUMP-07@v2#4.1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X02",
+   "category": "cross_tenant",
+   "ms": 4369.021499995142,
+   "ranked": [
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-GLOBEX-LOC-01@v1#3",
+    "SOP-GLOBEX-LOC-01@v1#4",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-GLOBEX-LOC-01@v1#1"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X03",
+   "category": "cross_tenant",
+   "ms": 3596.022700017784,
+   "ranked": [
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-ACME-LOC-01@v1#3",
+    "SOP-PUMP-07@v2#5.1",
+    "SOP-ACME-LOC-01@v1#4",
+    "SOP-PUMP-11@v1#3.2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  },
+  {
+   "id": "X04",
+   "category": "cross_tenant",
+   "ms": 3370.7520999596454,
+   "ranked": [
+    "SOP-PUMP-07@v2#4.1",
+    "SOP-PUMP-11@v1#3.3",
+    "SOP-PUMP-11@v1#3.1",
+    "SOP-PUMP-11@v1#4.2",
+    "MAN-CP200@v1#2"
+   ],
+   "recall": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "leak": false,
+   "stale_in_top5": false
+  }
+ ]
+}

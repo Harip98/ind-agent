@@ -31,11 +31,19 @@ curl -H "Authorization: Bearer $TOKEN" "localhost:8081/v1/assets/P-12/alarms?fro
 curl -H "Authorization: Bearer $TOKEN" "localhost:8081/v1/assets/P-12/sensors/TT-101/window?from=2026-10-15T22:00:00Z&to=2026-10-16T06:00:00Z"
 ```
 
+## Knowledge base and retrieval
+```bash
+cd services/ai-svc
+uv run copilot ingest                         # corpus/ -> kb.* (Ollama nomic-embed-text)
+uv run copilot search --tenant acme --model CP-200 "bearing temperature high, cooling water return rising"
+uv run copilot eval-retrieval                 # writes eval/reports/<date>-retrieval.md
+```
+
 ## Tests
 ```bash
 cd services/ai-svc
 uv run pytest                  # unit tests
-uv run pytest -m integration   # needs docker compose Postgres + migrate
+uv run pytest -m integration   # needs docker compose Postgres; uses its own DB indagent_test
 cd ../data-svc && go test ./...
 INDAGENT_INTEGRATION=1 go test -p 1 ./...   # needs compose Postgres + simgen data
 ```

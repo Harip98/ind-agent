@@ -34,3 +34,11 @@ def test_weak_superseded_hit_is_dropped():
 
 def test_k_limits_results():
     assert len(select_hits([_hit(f"D@v1#{i}", 1 - i / 10) for i in range(8)], k=5)) == 5
+
+
+def test_renumbered_section_is_not_a_twin():
+    """v1 §5.3 'Grease Top-Up' was removed; v2 reused 5.3 for 'Instrument Fault'."""
+    stale = replace(_hit("D@v1#5.3", 0.9, current=False), heading="Grease Top-Up")
+    current = replace(_hit("D@v2#5.3", 0.5), heading="Instrument Fault")
+    hits = select_hits([stale, current], k=5)
+    assert [(h.section_id, h.stale) for h in hits] == [("D@v1#5.3", True), ("D@v2#5.3", False)]

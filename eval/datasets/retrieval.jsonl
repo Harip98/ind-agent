@@ -1,0 +1,40 @@
+{"id": "N01", "tenant": "acme", "asset_model": "CP-200", "query": "bearing temperature and cooling water return temperature both rising while flow is normal", "gold": ["SOP-PUMP-07@v2#4.1"], "category": "normal"}
+{"id": "N02", "tenant": "acme", "asset_model": "CP-200", "query": "how to restore cooling water flow to a pump bearing housing", "gold": ["SOP-PUMP-07@v2#5.1"], "category": "normal"}
+{"id": "N03", "tenant": "acme", "asset_model": "CP-200", "query": "vibration increasing over several days followed by a bearing temperature rise", "gold": ["SOP-PUMP-07@v2#4.2"], "category": "normal"}
+{"id": "N04", "tenant": "acme", "asset_model": "CP-200", "query": "bearing temperature rising while all related signals stay flat", "gold": ["SOP-PUMP-07@v2#4.3", "SOP-INST-03@v3#2"], "category": "normal"}
+{"id": "N05", "tenant": "globex", "asset_model": "CP-200", "query": "discharge flow and pressure collapse within minutes and motor current drops", "gold": ["SOP-PUMP-11@v1#4.1", "SOP-PUMP-07@v2#4.4"], "category": "normal"}
+{"id": "N06", "tenant": "globex", "asset_model": "CP-200", "query": "what to do after a pump ran dry", "gold": ["SOP-PUMP-11@v1#4.2"], "category": "normal"}
+{"id": "N07", "tenant": "globex", "asset_model": "CP-200", "query": "gradual flow drop with high vibration and gravel-like noise at the pump casing", "gold": ["SOP-PUMP-11@v1#3.1"], "category": "normal"}
+{"id": "N08", "tenant": "globex", "asset_model": "CP-200", "query": "causes of insufficient NPSH on a centrifugal pump", "gold": ["SOP-PUMP-11@v1#3.2"], "category": "normal"}
+{"id": "N09", "tenant": "acme", "asset_model": "CP-200", "query": "bearing re-greasing interval and grease quantity", "gold": ["MAN-CP200@v1#3"], "category": "normal"}
+{"id": "N10", "tenant": "acme", "asset_model": "CP-200", "query": "vibration velocity limits ISO 10816 for the pump", "gold": ["MAN-CP200@v1#4"], "category": "normal"}
+{"id": "N11", "tenant": "acme", "asset_model": "CP-200", "query": "TT-101 alarm limit and normal bearing temperature range", "gold": ["SOP-PUMP-07@v2#3"], "category": "normal"}
+{"id": "N12", "tenant": "acme", "asset_model": "CL-50", "query": "cooling loop supply temperature rising over days with normal flow and a narrowing temperature difference", "gold": ["SOP-CW-02@v1#3"], "category": "normal"}
+{"id": "N13", "tenant": "acme", "asset_model": "CL-50", "query": "how to clean a fouled plate heat exchanger", "gold": ["SOP-CW-02@v1#4"], "category": "normal"}
+{"id": "N14", "tenant": "globex", "asset_model": "AC-75", "query": "compressor discharge temperature high while motor current and pressure are normal", "gold": ["SOP-AC-05@v2#4.1"], "category": "normal"}
+{"id": "N15", "tenant": "globex", "asset_model": "AC-75", "query": "check the compressor cooler fan motor and belt", "gold": ["SOP-AC-05@v2#4.1", "SOP-AC-05@v2#5"], "category": "normal"}
+{"id": "N16", "tenant": "acme", "asset_model": "AC-75", "query": "compressor discharge temperature high with low oil level in the sight glass", "gold": ["SOP-AC-05@v2#4.3"], "category": "normal"}
+{"id": "N17", "tenant": "acme", "asset_model": "AC-75", "query": "is it allowed to bypass the high discharge temperature trip", "gold": ["SOP-AC-05@v2#2"], "category": "normal"}
+{"id": "N18", "tenant": "acme", "asset_model": "CP-200", "query": "single sample spike above the alarm limit with no change in any other signal", "gold": ["GUIDE-ALARM-01@v1#2"], "category": "normal"}
+{"id": "N19", "tenant": "globex", "asset_model": "AC-75", "query": "pressure alarm raised for two minutes then cleared and nothing else moved", "gold": ["GUIDE-ALARM-01@v1#2"], "category": "normal"}
+{"id": "N20", "tenant": "acme", "asset_model": "CP-200", "query": "alarm keeps raising and clearing repeatedly near the limit", "gold": ["GUIDE-ALARM-01@v1#3"], "category": "normal"}
+{"id": "N21", "tenant": "acme", "asset_model": "CP-200", "query": "temperature signal flat-lined and then reported bad quality", "gold": ["SOP-INST-03@v3#3"], "category": "normal"}
+{"id": "N22", "tenant": "acme", "asset_model": "CP-200", "query": "how to verify a temperature transmitter against a portable reference thermometer", "gold": ["SOP-INST-03@v3#4"], "category": "normal"}
+{"id": "N23", "tenant": "acme", "asset_model": "CP-200", "query": "lock-out tag-out before opening the pump bearing housing", "gold": ["SOP-PUMP-07@v2#2"], "category": "normal"}
+{"id": "N24", "tenant": "globex", "asset_model": "CP-200", "query": "restart checks after cavitation or dry running", "gold": ["SOP-PUMP-11@v1#5"], "category": "normal"}
+{"id": "N25", "tenant": "acme", "asset_model": "CP-200", "query": "pump bearing cooling water system flow rate and strainer", "gold": ["MAN-CP200@v1#5"], "category": "normal"}
+{"id": "N26", "tenant": "acme", "asset_model": "CP-200", "query": "monitoring after returning the pump to service following bearing work", "gold": ["SOP-PUMP-07@v2#6"], "category": "normal"}
+{"id": "S01", "tenant": "acme", "asset_model": "CP-200", "query": "top up grease at every bearing temperature alarm with the grease gun", "gold": ["SOP-PUMP-07@v1#5.3"], "category": "stale"}
+{"id": "S02", "tenant": "acme", "asset_model": "CP-200", "query": "two-point transmitter calibration with an ice bath and boiling water", "gold": ["SOP-INST-03@v2#4"], "category": "stale"}
+{"id": "S03", "tenant": "globex", "asset_model": "AC-75", "query": "temporarily bypass the thermostatic valve to keep the compressor running", "gold": ["SOP-AC-05@v1#4.3"], "category": "stale"}
+{"id": "S04", "tenant": "acme", "asset_model": "AC-75", "query": "open the manual bypass valve on the oil cooler line until the next planned stop", "gold": ["SOP-AC-05@v1#4.3"], "category": "stale"}
+{"id": "S05", "tenant": "globex", "asset_model": "CP-200", "query": "reset the alarm after two shots of lithium grease and monitor for 15 minutes", "gold": ["SOP-PUMP-07@v1#5.3"], "category": "stale"}
+{"id": "T01", "tenant": "acme", "asset_model": "CP-200", "query": "Pump 12 cooling water isolation valve location", "gold": ["SOP-ACME-LOC-01@v1#2"], "category": "tenant_local"}
+{"id": "T02", "tenant": "acme", "asset_model": "CP-200", "query": "how to clean strainer CW-S-12", "gold": ["SOP-ACME-LOC-01@v1#3"], "category": "tenant_local"}
+{"id": "T03", "tenant": "acme", "asset_model": "CP-200", "query": "flush the P-12 bearing cooling jacket through the drain point", "gold": ["SOP-ACME-LOC-01@v1#4"], "category": "tenant_local"}
+{"id": "T04", "tenant": "globex", "asset_model": "CP-200", "query": "where are the suction strainers for Pump 20 and Pump 21", "gold": ["SOP-GLOBEX-LOC-01@v1#2"], "category": "tenant_local"}
+{"id": "T05", "tenant": "globex", "asset_model": "CP-200", "query": "cleaning the North Station suction strainer basket", "gold": ["SOP-GLOBEX-LOC-01@v1#3"], "category": "tenant_local"}
+{"id": "X01", "tenant": "globex", "asset_model": "CP-200", "query": "Pump 12 cooling water isolation valve CW-V-112", "gold": [], "category": "cross_tenant"}
+{"id": "X02", "tenant": "globex", "asset_model": null, "query": "Plant A strainer CW-S-12 cleaning and jacket flush JD-12", "gold": [], "category": "cross_tenant"}
+{"id": "X03", "tenant": "acme", "asset_model": "CP-200", "query": "North Station suction strainer SS-20 basket cleaning", "gold": [], "category": "cross_tenant"}
+{"id": "X04", "tenant": "acme", "asset_model": null, "query": "PDI-21 differential pressure gauge in the basement pump pit", "gold": [], "category": "cross_tenant"}

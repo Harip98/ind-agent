@@ -89,3 +89,51 @@ def ingest(
     stats = run_ingest(docs, settings, embedder)
     typer.echo(f"{len(docs)} versions: {stats.written} written ({stats.chunks} chunks), "
                f"{stats.skipped} unchanged")
+
+
+def _retriever(settings, fake_embeddings: bool = False):
+    from copilot.kb.embed import HashEmbedder, OllamaEmbedder
+    from copilot.ollama import OllamaClient
+    from copilot.retrieval import Retriever
+    from copilot.retrieval.rerank import CrossEncoderReranker
+
+    embedder = HashEmbedder() if fake_embeddings else OllamaEmbedder(
+        OllamaClient(settings.ollama_url, settings.ollama_timeout_s), settings.embed_model)
+    return Retriever(settings, embedder, CrossEncoderReranker(settings.reranker_model))
+
+
+@app.command()
+def search(
+    query: str,
+    tenant: str = typer.Option(..., help="Tenant id."),
+    model: str | None = typer.Option(None, help="Asset model filter, e.g. CP-200."),
+    strategy: str = typer.Option("hybrid_rerank", help="vector | hybrid | hybrid_rerank"),
+    k: int = typer.Option(5),
+) -> None:
+    """Search the knowledge base as a tenant."""
+    for i, h in enumerate(_retriever(get_settings()).search(tenant, query, model, k, strategy), 1):
+        flag = " [STALE]" if h.stale else ""
+        typer.echo(f"{i}. {h.section_id}{flag}  score={h.score:.3f}  {h.title} — {h.heading}")
+
+
+@app.command("eval-retrieval")
+def eval_retrieval(
+    strategy: str = typer.Option("all", help="all | vector | hybrid | hybrid_rerank"),
+) -> None:
+    """Compare retrieval strategies on eval/datasets/retrieval.jsonl and write a report."""
+    import json
+    from datetime import date
+
+    from copilot.eval.retrieval_eval import REPO_DATASET, load_cases, render_report, run
+    from copilot.retrieval import STRATEGIES
+
+    strategies = list(STRATEGIES) if strategy == "all" else [strategy]
+    results = run(load_cases(REPO_DATASET), _retriever(get_settings()), strategies)
+    out = REPO_ROOT / "eval" / "reports" / f"{date.today().isoformat()}-retrieval"
+    report = render_report(results, f"Retrieval evaluation — {date.today().isoformat()}")
+    out.with_suffix(".md").write_text(report, encoding="utf-8")
+    out.with_suffix(".json").write_text(json.dumps(results, indent=1), encoding="utf-8")
+    typer.echo(report)
+    if any(r["leak"] for rows in results.values() for r in rows):
+        typer.echo("ERROR: cross-tenant leak", err=True)
+        raise typer.Exit(1)

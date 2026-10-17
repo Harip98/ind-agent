@@ -50,14 +50,13 @@ Exit criteria
   **cross-tenant → 404**, downsampling bounds.
 - Manual `curl` with a devtoken returns Pump 12 readings.
 
-## M2 — Corpus, ingest & retrieval
+## M2 — Corpus, ingest & retrieval ✅ (2026-10-17)
 
 **Goal:** versioned documents searchable with three strategies, measured.
 
 Carry-over from the M0 review
 - kb tenancy is structural (migration 005): shared docs use `tenant_id = '_shared'`.
-- pgvector HNSW applies RLS/tenant filters after the index scan, so top-k can come back short:
-  use `SET hnsw.iterative_scan = relaxed_order` (or a larger `ef_search`) and test recall per tenant.
+- Exact KNN replaced HNSW (migration 008); see architecture §4.3. Results: `eval/reports/2026-10-17-retrieval.md`.
 
 Tasks
 - Author corpus: SOPs + troubleshooting guides for CP-200 pumps, cooling loop, compressor;
