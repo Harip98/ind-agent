@@ -1,0 +1,72 @@
+# Fault signatures: boolean features from copilot.analysis -> candidate causes.
+# score = 0 if any `require` is false or any `exclude` is true,
+#         else 0.5 + 0.5 * (matched support / len(support))   (1.0 when support is empty).
+# Model-specific causes are listed before generic ones; ties keep this order.
+models:
+  CP-200:
+    roles: {TT-101: bearing_temp, TT-102: cw_return_temp, FT-101: flow, PT-101: pressure, IT-101: current, VT-101: vibration}
+    causes:
+      COOLING_RESTRICTION:
+        label: Cooling water restriction
+        description: Bearing and cooling-water return temperatures rose together while flow and motor current stayed normal, so heat is not being removed from the bearing housing.
+        require: [bearing_temp.rising, cw_return_temp.rising]
+        support: [flow.flat, current.flat]
+        query: pump bearing temperature high cooling water restriction cooling water return temperature rising strainer valve
+      DRY_RUN:
+        label: Dry running / loss of suction
+        description: Discharge flow collapsed within minutes together with discharge pressure, which indicates the pump lost its suction and ran dry.
+        require: [flow.sudden_drop]
+        support: [pressure.falling, current.falling]
+        query: pump dry running loss of suction flow and discharge pressure collapse prime trip
+      CAVITATION:
+        label: Cavitation (insufficient NPSH)
+        description: Flow fell gradually while vibration rose, the pattern of cavitation from insufficient suction head.
+        require: [flow.falling, vibration.rising]
+        support: [pressure.falling]
+        exclude: [flow.sudden_drop]
+        query: pump cavitation flow falling vibration rising suction strainer NPSH
+      BEARING_WEAR:
+        label: Bearing wear or lubrication failure
+        description: Vibration rose while flow and cooling water stayed normal, the pattern of bearing degradation or lubrication failure.
+        require: [vibration.rising]
+        support: [bearing_temp.rising, flow.flat, cw_return_temp.flat]
+        query: pump bearing wear lubrication vibration rising grease bearing replacement
+  CL-50:
+    roles: {TT-201: supply_temp, TT-202: return_temp, FT-201: flow, PT-201: pressure}
+    causes:
+      HX_FOULING:
+        label: Heat exchanger fouling
+        description: Cooling-loop supply temperature rose while loop flow and pressure stayed normal, so the plate heat exchanger is removing less heat.
+        require: [supply_temp.rising]
+        support: [flow.flat, pressure.flat]
+        query: cooling loop supply temperature rising plate heat exchanger fouling backflush
+  AC-75:
+    roles: {TT-301: discharge_temp, PT-301: pressure, IT-301: current, VT-301: vibration}
+    causes:
+      COOLER_FAN_FAILURE:
+        label: Cooler fan failure
+        description: Compressor discharge temperature rose within hours while motor current and discharge pressure stayed normal, so the oil/air cooler is not rejecting heat.
+        require: [discharge_temp.rising]
+        support: [current.flat, pressure.flat]
+        query: compressor high discharge temperature cooler fan failure fan motor belt
+generic:
+  causes:
+    SENSOR_FAILURE:
+      label: Sensor or signal failure
+      description: The alarmed signal flat-lined, had gaps or bad-quality samples, so the reading itself is unreliable.
+      require: [alarmed.bad_data]
+      support: []
+      query: temperature transmitter bad quality flat-line signal failure loop check
+    SENSOR_DRIFT:
+      label: Instrument drift
+      description: Only the alarmed signal changed while every related signal stayed steady; a real process problem would normally move at least one related signal.
+      require: [alarmed.rising, related.all_flat]
+      support: [alarmed.over_days]
+      exclude: [alarmed.bad_data]
+      query: instrument fault transmitter drift single signal rising related signals flat verification calibration
+    NUISANCE_SPIKE:
+      label: Nuisance spike
+      description: The alarm cleared within minutes and neither the alarmed signal nor related signals showed a trend, so it was a short spike rather than a process change.
+      require: [alarm.short, alarmed.no_trend]
+      support: [related.all_flat]
+      query: nuisance alarm spike single sample no related signal change deadband
