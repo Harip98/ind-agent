@@ -218,3 +218,19 @@ def ask(
         typer.echo(f"  [{c['ref']}] {c['doc_id']} v{c['version']} §{c['section']} {c['heading']}"
                    + ("  [SUPERSEDED]" if c["stale"] else ""))
     typer.echo(f"\ntimings_ms: {result['timings_ms']}   llm: {result['llm']}")
+
+
+@app.command("eval-build")
+def eval_build() -> None:
+    """Generate eval/datasets/{dev,test}.jsonl from data/ground_truth.jsonl and data/simgen_run.json."""
+    import json
+
+    from copilot.eval.dataset import build_cases, split_cases, write_dataset
+
+    gt = [json.loads(line) for line in (REPO_ROOT / "data" / "ground_truth.jsonl").read_text(encoding="utf-8").splitlines()
+          if line.strip()]
+    meta = json.loads((REPO_ROOT / "data" / "simgen_run.json").read_text(encoding="utf-8"))
+    anchor = {k: meta[k] for k in ("start", "end", "days", "seed")}
+    dev, test = split_cases(build_cases(gt, anchor))
+    write_dataset(dev, test, anchor, REPO_ROOT / "eval" / "datasets")
+    typer.echo(f"dev {len(dev)}, test {len(test)} cases -> eval/datasets (anchor {anchor['end']}, seed {anchor['seed']})")

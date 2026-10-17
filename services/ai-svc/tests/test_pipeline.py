@@ -194,3 +194,10 @@ def test_foreign_ids_in_request_behave_like_unknown(sim):
                 InvestigateRequest(Q, as_of=END, mode="template", alarm_id=foreign_alarm)):
         out = investigate(req, _p("globex"), make_deps(sim), "t18")
         assert out["status"] == "needs_clarification" and "P-12" not in str(out)
+
+
+def test_retrieval_query_includes_the_question(sim):
+    r = FakeRetriever()
+    q = "Investigate yesterday's temperature alarm on Pump 12. Should we top up the grease at every alarm?"
+    investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim, retriever=r), "t19")
+    assert any("grease" in call[1] for call in r.calls)

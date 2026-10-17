@@ -164,7 +164,8 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
 
     sensor = asset.sensor(alarm.tag)
     strategy = req.strategy or deps.settings.retrieval_strategy
-    query = " ".join([sensor.description, alarm.alarm_type.replace("_", " ")] + [c.query for c in candidates[:2]])
+    query = " ".join([req.question, sensor.description, alarm.alarm_type.replace("_", " ")]
+                     + [c.query for c in candidates[:2]])
     general = deps.retriever.search(principal.tenant_id, query, asset.model, k=5, strategy=strategy)
     targeted: list[Hit] = []
     if candidates:  # make sure the procedure for the top cause is in front of the writer
