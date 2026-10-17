@@ -1,0 +1,1 @@
+- 2026-10-17 15:30 UTC: 25d2ca38792a -> 1dcf773e24a5: M4 review C-2: test split rebuilt as a group split by incident (5 held-out incidents, distinct causes) with stale, unauthorized and missing-evidence cases redesigned

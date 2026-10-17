@@ -221,31 +221,82 @@ def ask(
 
 
 @app.command("eval-build")
-def eval_build() -> None:
-    """Generate eval/datasets/{dev,test}.jsonl from data/ground_truth.jsonl and data/simgen_run.json."""
+def eval_build(
+    refreeze: str | None = typer.Option(None, help="Reason for changing the frozen test split (logged)."),
+) -> None:
+    """Generate eval/datasets/{dev,test}.jsonl from the anchored simulator run (data/simgen_run.json)."""
     import json
+    from datetime import datetime
 
-    from copilot.eval.dataset import build_cases, split_cases, write_dataset
+    from copilot.eval.dataset import DatasetError, build_cases, split_cases, write_dataset
+    from copilot.simgen.generate import generate
 
-    gt = [json.loads(line) for line in (REPO_ROOT / "data" / "ground_truth.jsonl").read_text(encoding="utf-8").splitlines()
-          if line.strip()]
     meta = json.loads((REPO_ROOT / "data" / "simgen_run.json").read_text(encoding="utf-8"))
     anchor = {k: meta[k] for k in ("start", "end", "days", "seed")}
-    dev, test = split_cases(build_cases(gt, anchor))
-    write_dataset(dev, test, anchor, REPO_ROOT / "eval" / "datasets")
+    sim = generate(datetime.fromisoformat(anchor["end"]), days=anchor["days"], seed=anchor["seed"])
+    gt = [g.to_json() for g in sim.ground_truth]
+    on_disk = [json.loads(line) for line in (REPO_ROOT / "data" / "ground_truth.jsonl").read_text(encoding="utf-8")
+               .splitlines() if line.strip()]
+    if [g["incident_id"] for g in on_disk] != [g["incident_id"] for g in gt] or on_disk != json.loads(json.dumps(gt)):
+        raise typer.BadParameter("data/ground_truth.jsonl does not match the anchored simulator run; re-run simgen")
+    alarms = [{"tenant_id": a.tenant_id, "asset_id": a.asset_id, "tag": a.tag, "alarm_type": a.alarm_type,
+               "raised_at": a.raised_at.isoformat()} for a in sim.alarms]
+    dev, test = split_cases(build_cases(gt, anchor, alarms))
+    try:
+        write_dataset(dev, test, anchor, REPO_ROOT / "eval" / "datasets", refreeze=refreeze)
+    except DatasetError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--refreeze") from exc
     typer.echo(f"dev {len(dev)}, test {len(test)} cases -> eval/datasets (anchor {anchor['end']}, seed {anchor['seed']})")
 
 
 EVAL_NOTES = [
-    "Questions are generated deterministically from simulator ground truth (`copilot eval-build`), labelled "
-    "`review: generated`; they have not yet been reviewed by a person.",
-    "The simulator's faults and the fault signatures were written by the same author, so root-cause accuracy "
-    "on this data shows internal consistency of the pipeline, not real-plant validity.",
-    "The test split (50 cases, hash in eval/datasets/test.sha256) was not used for any tuning.",
+    "Questions are generated deterministically from the simulator run (`copilot eval-build`), labelled "
+    "`review: generated`; they have NOT been reviewed by a person, and no manual spot check of answers was done yet.",
+    "The test split is a group split: 5 incidents (5 different root causes) plus a third of the missing-evidence, "
+    "unauthorized and ambiguous groups never appear in dev. It was not used for tuning (hash in eval/datasets/test.sha256, "
+    "re-freezes logged in FREEZE_LOG.md).",
+    "The simulator's faults and the fault signatures were written by the same author, so root-cause accuracy on this "
+    "data shows internal consistency of the pipeline, not real-plant validity. Effective sample size is the number of "
+    "incidents, not the number of questions.",
+    "'Procedure doc match' checks the recommended document against a per-cause list at document level; it is not a "
+    "section-level or human judgement of citation quality.",
+]
+LLM_NOTES = [
     "Hardware: laptop RTX 3050 Ti 4 GB, Ryzen 7 4800H; LLM qwen2.5:7b-instruct via Ollama (partially CPU-offloaded); "
     "retrieval strategy hybrid; data-svc and Postgres in Docker on the same machine.",
-    "Cost is local compute only: reported as latency and tokens; there is no per-request API bill.",
 ]
+
+
+def _sha_files(paths) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    for path in sorted(paths):
+        h.update(path.read_bytes().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:16]
+
+
+def _fingerprint(split: str, mode: str, settings) -> dict:
+    import subprocess
+
+    from copilot.causes import SIGNATURES_PATH
+
+    def git(*args):
+        try:
+            return subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True, text=True).stdout.strip()
+        except OSError:
+            return "unknown"
+
+    datasets = REPO_ROOT / "eval" / "datasets"
+    return {
+        "dataset": _sha_files([datasets / f"{split}.jsonl", datasets / "anchor.json"]),
+        "code": git("rev-parse", "--short", "HEAD") + ("+dirty" if git("status", "--porcelain", "--", "services") else ""),
+        "corpus": _sha_files((REPO_ROOT / "corpus").rglob("*.md")),
+        "signatures": _sha_files([SIGNATURES_PATH]),
+        "model": settings.llm_model if mode != "template" else None,
+        "strategy": settings.retrieval_strategy,
+        "mode": mode,
+    }
 
 
 @app.command("eval")
@@ -254,6 +305,7 @@ def eval_e2e(
     mode: str = typer.Option("template", help="template | llm"),
     limit: int | None = typer.Option(None, help="Run at most N new cases (resumable)."),
     fresh: bool = typer.Option(False, help="Discard earlier results for this split and mode."),
+    retry_errors: bool = typer.Option(False, help="Re-run cases whose earlier attempt ended in an error."),
 ) -> None:
     """Run the end-to-end evaluation against the live stack and write eval/reports/e2e-<split>-<mode>.{jsonl,md}."""
     from datetime import date
@@ -261,7 +313,7 @@ def eval_e2e(
     from copilot.api import default_deps
     from copilot.auth import issue_token, verify_token
     from copilot.eval.dataset import check_anchor, load_dataset
-    from copilot.eval.e2e import render_e2e_report, run_cases, summarize
+    from copilot.eval.e2e import EvalStateError, render_e2e_report, run_cases, summarize
 
     if split not in ("dev", "test") or mode not in ("template", "llm"):
         raise typer.BadParameter("split must be dev|test and mode template|llm")
@@ -270,18 +322,26 @@ def eval_e2e(
     cases = load_dataset(datasets, split)
     settings = get_settings()
     out = REPO_ROOT / "eval" / "reports" / f"e2e-{split}-{mode}.jsonl"
-    if fresh and out.exists():
-        out.unlink()
+    if fresh:
+        for f in (out, out.with_suffix(".meta.json")):
+            f.unlink(missing_ok=True)
 
     def principal_for(case):
         return verify_token(issue_token(case.tenant, "eval-runner", settings.jwt_secret), settings.jwt_secret)
 
-    rows = run_cases(cases, default_deps(), mode, out, limit, principal_for)
-    summary = summarize(rows)
+    try:
+        rows = run_cases(cases, default_deps(), mode, out, limit, principal_for,
+                         fingerprint=_fingerprint(split, mode, settings), retry_errors=retry_errors)
+    except EvalStateError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    summary = summarize(rows, mode)
     title = f"End-to-end evaluation — {split} split, {mode} mode ({len(rows)}/{len(cases)} cases, {date.today()})"
-    out.with_suffix(".md").write_text(render_e2e_report(summary, rows, title, EVAL_NOTES), encoding="utf-8")
+    notes = EVAL_NOTES + (LLM_NOTES if mode != "template" else [])
+    out.with_suffix(".md").write_text(render_e2e_report(summary, rows, title, notes, mode), encoding="utf-8")
     a = summary["all"]
-    typer.echo(f"{len(rows)}/{len(cases)} cases | status {a['status_acc']} | top-1 {a['top1']} | top-3 {a['top3']} | "
-               f"citation {a['citation']} | leaks {a['leaks']} | unsafe {a['unsafe']} | errors {a['errors']} | "
+    rate = lambda v: "-" if v is None else f"{v['k']}/{v['n']}"  # noqa: E731
+    typer.echo(f"{len(rows)}/{len(cases)} cases | status {rate(a['status_acc'])} | top-1 {rate(a['top1'])} | "
+               f"procedure {rate(a['procedure'])} | stale pass {rate(a['stale_pass'])} | verified {rate(a['verified'])} | "
+               f"leaks {a['leaks']} | unsafe {a['unsafe']} | injection {a['injection_followed']} | errors {a['errors']} | "
                f"p50 {summary['latency']['total']['p50']} ms")
     typer.echo(f"report: {out.with_suffix('.md')}")
