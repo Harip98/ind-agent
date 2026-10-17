@@ -139,3 +139,13 @@ def test_tenant_must_match_folder(tmp_path):
 def test_literal_shared_tenant_rejected(tmp_path):
     with pytest.raises(CorpusError, match="tenant"):
         parse_document(_write(tmp_path, DOC.replace("tenant: _shared", "tenant: shared")), tmp_path)
+
+
+def test_shared_documents_do_not_name_tenant_private_documents_or_sites():
+    docs = load_corpus(CORPUS_DIR)
+    private = {d.doc_id for d in docs if d.tenant_id != SHARED}
+    sites = {"Plant A", "North Station", "South Station"}
+    for d in docs:
+        if d.tenant_id == SHARED:
+            text = " ".join(s.text for s in d.sections)
+            assert not [x for x in private | sites if x in text], d.doc_id

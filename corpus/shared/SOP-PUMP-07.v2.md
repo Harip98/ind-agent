@@ -50,7 +50,7 @@ Pattern: discharge flow FT-101 and discharge pressure PT-101 collapse within min
 
 ### 5.1 Cooling Water Restriction
 
-Restore cooling water flow: open the supply valve fully, clean the strainer (use the site-specific isolation points, for example SOP-ACME-LOC-01 at Plant A), and flush the cooling jacket if flow remains below 1.2 m³/h. Confirm TT-102 returns below 30 °C and TT-101 begins to fall within 30 minutes.
+Restore cooling water flow: open the supply valve fully, clean the strainer (use your site-specific isolation and strainer procedure), and flush the cooling jacket if flow remains below 1.2 m³/h. Confirm TT-102 returns below 30 °C and TT-101 begins to fall within 30 minutes.
 
 ### 5.2 Bearing Wear
 

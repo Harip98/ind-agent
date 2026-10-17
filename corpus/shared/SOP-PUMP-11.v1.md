@@ -30,7 +30,7 @@ Insufficient net positive suction head (NPSH): a blocked or partially blocked su
 
 ### 3.3 Actions
 
-Check the suction strainer differential pressure and clean the strainer if it exceeds 0.3 bar (site-specific strainer procedures, for example SOP-GLOBEX-LOC-01 at North Station). Confirm the suction valve is fully open and the suction vessel level is above the minimum. Do not throttle the discharge valve to reduce cavitation noise.
+Check the suction strainer differential pressure and clean the strainer if it exceeds 0.3 bar (follow your site-specific strainer cleaning procedure). Confirm the suction valve is fully open and the suction vessel level is above the minimum. Do not throttle the discharge valve to reduce cavitation noise.
 
 ## 4 Dry Running
 
