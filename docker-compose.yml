@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${COPILOT_OWNER_PASSWORD:-owner_dev_pw}
       POSTGRES_DB: indagent
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,12 +19,13 @@ services:
 
   data-svc:
     build: ./services/data-svc
+    restart: unless-stopped  # survives starting before `copilot migrate` creates its role
     environment:
       DATASVC_ADDR: ":8081"
       DATASVC_DB_DSN: "host=postgres port=5432 dbname=indagent user=ops_reader password=${COPILOT_OPS_READER_PASSWORD:-ops_reader_dev_pw}"
-      COPILOT_JWT_SECRET: ${COPILOT_JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+      COPILOT_JWT_SECRET: ${COPILOT_JWT_SECRET:?set COPILOT_JWT_SECRET in .env}
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
