@@ -141,10 +141,15 @@ Image `pgvector/pgvector:pg16`. Migrations in `db/migrations/*.sql`, applied in 
 
 | Table | Key columns |
 |---|---|
-| `documents` | `id`, `tenant_id NULL` (= shared), `title`, `doc_type` |
-| `doc_versions` | `(doc_id, version)`, `effective_date`, `superseded_by`, `is_current`, `source_path`, `sha256`, `license` |
-| `sections` | `id` (e.g. `SOP-PUMP-07@v3#4.2`), `doc_id`, `version`, `section_no`, `heading`, `text` |
-| `chunks` | `id`, `section_id`, `tenant_id`, `asset_models text[]`, `is_current`, `content`, `embedding vector(768)`, `tsv tsvector` (generated) |
+| `documents` | `(tenant_id, id)`, `title`, `doc_type` |
+| `doc_versions` | `(tenant_id, doc_id, version)`, `effective_date`, `superseded_by`, `is_current`, `source_path`, `sha256`, `license` |
+| `sections` | `(tenant_id, id)` (e.g. `SOP-PUMP-07@v3#4.2`), `doc_id`, `version`, `section_no`, `heading`, `text` |
+| `chunks` | `(tenant_id, id)`, `section_id`, `asset_models text[]`, `is_current`, `content`, `embedding vector(768)`, `tsv tsvector` (generated) |
+
+kb tenancy is structural: `tenant_id` is `NOT NULL` (`'_shared'` = visible to all tenants), part of
+every primary key, and carried down by composite foreign keys
+(`documents → doc_versions → sections → chunks`), so a child row can never carry a different
+tenant than its document, and two tenants may use the same document id.
 
 Indexes: HNSW on `chunks.embedding` (cosine), GIN on `chunks.tsv`, B-tree on
 `sensor_readings (tenant_id, asset_id, tag, ts)` and `alarms (tenant_id, asset_id, raised_at)`.
@@ -154,8 +159,8 @@ Indexes: HNSW on `chunks.embedding` (cosine), GIN on `chunks.tsv`, B-tree on
 - `ops_reader`: `SELECT` on `ops` only. `kb_reader`: `SELECT` on `kb` only.
   `ops_loader` / `kb_writer`: used only by the `simgen` / `ingest` CLIs.
 - `ENABLE` + `FORCE ROW LEVEL SECURITY` on every tenant table.
-  Policy: `tenant_id = current_setting('app.tenant_id')`; for `kb` tables also
-  `OR tenant_id IS NULL` (shared documents).
+  Policy: `tenant_id = public.current_tenant()` (reads `app.tenant_id`; NULL when unset, so
+  policies fail closed); for `kb` tables also `OR tenant_id = '_shared'`.
 
 ## 5. Investigation pipeline
 

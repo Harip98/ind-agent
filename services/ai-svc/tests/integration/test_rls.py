@@ -30,13 +30,13 @@ def seeded(settings):
                     " VALUES (%s, 'P-1', 'Pump 1', 'CP-200', 'Test')",
                     (tid,),
                 )
+    _kb_cleanup(settings)
     with psycopg.connect(settings.dsn("kb_writer")) as conn:
         with conn.transaction():
             as_tenant(conn, "itest_a")
-            conn.execute("DELETE FROM kb.documents WHERE id LIKE %s", ("ITEST-%",))
             conn.execute(
                 "INSERT INTO kb.documents (id, tenant_id, title, doc_type) VALUES"
-                " ('ITEST-SHARED', NULL, 'Shared', 'sop'),"
+                " ('ITEST-SHARED', '_shared', 'Shared', 'sop'),"
                 " ('ITEST-A', 'itest_a', 'Tenant A only', 'sop')"
             )
     yield
@@ -45,10 +45,15 @@ def seeded(settings):
             with conn.transaction():
                 as_tenant(conn, tid)
                 _cleanup(conn, tid)
+    _kb_cleanup(settings)
+
+
+def _kb_cleanup(settings) -> None:
     with psycopg.connect(settings.dsn("kb_writer")) as conn:
-        with conn.transaction():
-            as_tenant(conn, "itest_a")
-            conn.execute("DELETE FROM kb.documents WHERE id LIKE %s", ("ITEST-%",))
+        for tid in TENANTS:
+            with conn.transaction():
+                as_tenant(conn, tid)
+                conn.execute("DELETE FROM kb.documents WHERE id LIKE %s", ("ITEST-%",))
 
 
 def test_reader_sees_only_own_tenant(settings, seeded):
@@ -102,6 +107,34 @@ def test_kb_shared_docs_visible_tenant_docs_isolated(settings, seeded):
         as_tenant(conn, "itest_b")
         ids = {r[0] for r in conn.execute("SELECT id FROM kb.documents WHERE id LIKE %s", ("ITEST-%",))}
     assert ids == {"ITEST-SHARED"}
+
+
+def test_kb_child_row_cannot_be_relabelled_to_another_tenant(settings, seeded):
+    """A private document's version labelled as shared would leak it to every tenant."""
+    with psycopg.connect(settings.dsn("kb_writer")) as conn:
+        as_tenant(conn, "itest_a")
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            conn.execute(
+                "INSERT INTO kb.doc_versions (doc_id, version, tenant_id, effective_date,"
+                " is_current, source_path, sha256, license)"
+                " VALUES ('ITEST-A', 1, '_shared', '2026-01-01', true, 'x.md', 'abc', 'test')"
+            )
+
+
+def test_kb_same_document_id_allowed_in_two_tenants(settings, seeded):
+    with psycopg.connect(settings.dsn("kb_writer")) as conn:
+        for tid in TENANTS:
+            with conn.transaction():
+                as_tenant(conn, tid)
+                conn.execute(
+                    "INSERT INTO kb.documents (id, tenant_id, title, doc_type)"
+                    " VALUES ('ITEST-LOCAL', %s, 'Local SOP', 'sop')",
+                    (tid,),
+                )
+    with psycopg.connect(settings.dsn("kb_reader")) as conn:
+        as_tenant(conn, "itest_b")
+        rows = conn.execute("SELECT tenant_id FROM kb.documents WHERE id = 'ITEST-LOCAL'").fetchall()
+    assert rows == [("itest_b",)]
 
 
 def test_migrations_are_idempotent(settings):

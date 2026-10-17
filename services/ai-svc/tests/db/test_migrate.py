@@ -20,4 +20,4 @@ def test_discover_rejects_badly_named_sql(tmp_path: Path):
 
 def test_repo_migrations_are_well_formed():
     versions = [v for v, _ in discover(MIGRATIONS_DIR)]
-    assert versions == ["001_roles_schemas", "002_ops", "003_kb", "004_rls"]
+    assert versions == ["001_roles_schemas", "002_ops", "003_kb", "004_rls", "005_kb_structural_tenancy"]
