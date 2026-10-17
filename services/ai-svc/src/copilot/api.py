@@ -1,23 +1,31 @@
 """FastAPI app: POST /investigate, GET /healthz. Handlers are sync, so FastAPI runs them in a thread pool."""
 
+import json
 import re
 import secrets
 from collections.abc import Callable
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, Header
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from copilot.auth import TokenError, verify_token
-from copilot.config import get_settings
+from copilot.auth import TokenError, issue_token, verify_token
+from copilot.config import REPO_ROOT, get_settings
 from copilot.datasvc import DataServiceClient, DataServiceError, RateLimited, Rejected
 from copilot.logjson import get_logger
 from copilot.pipeline import InvestigateRequest, LLMUnavailable, PipelineDeps, investigate
 
 _TRACE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
+WEB_DIR = Path(__file__).with_name("web")
+
+
+class DevTokenBody(BaseModel):
+    tenant: str = Field(min_length=1, max_length=32)
 
 
 class InvestigateBody(BaseModel):
@@ -59,9 +67,38 @@ def create_app(deps_factory: Callable[[], PipelineDeps] | None = None) -> FastAP
     deps = lru_cache(maxsize=1)(deps_factory or default_deps)
     log = get_logger()
 
+    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+
     @app.get("/healthz")
     def healthz() -> dict:
         return {"status": "ok"}
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        return FileResponse(WEB_DIR / "index.html", media_type="text/html")
+
+    def _dev_only() -> JSONResponse | None:
+        if not get_settings().dev_mode:
+            return JSONResponse({"error": {"code": "not_found", "message": "not found"}}, status_code=404)
+        return None
+
+    @app.get("/dev/defaults", include_in_schema=False)
+    def dev_defaults():
+        if blocked := _dev_only():
+            return blocked
+        meta = REPO_ROOT / "data" / "simgen_run.json"
+        as_of = json.loads(meta.read_text(encoding="utf-8"))["end"] if meta.exists() else None
+        return {"tenants": get_settings().dev_tenants, "as_of": as_of}
+
+    @app.post("/dev/token", include_in_schema=False)
+    def dev_token(body: DevTokenBody):
+        if blocked := _dev_only():
+            return blocked
+        s = get_settings()
+        if body.tenant not in s.dev_tenants:
+            return JSONResponse({"error": {"code": "unknown_tenant", "message": "unknown tenant"}}, status_code=400)
+        log.warning("dev token issued", extra={"fields": {"tenant": body.tenant}})
+        return {"token": issue_token(body.tenant, "demo-user", s.jwt_secret)}
 
     @app.post("/investigate")
     def post_investigate(body: InvestigateBody, authorization: str | None = Header(default=None),

@@ -92,3 +92,39 @@ def test_rate_limited_and_rejected_and_unexpected_errors_keep_the_contract(sim):
         r = _client(sim, datasvc=boom).post("/investigate", json=BODY, headers={**_auth(), "X-Trace-Id": "t-9"})
         assert r.status_code == status and r.json()["error"]["code"] == code
         assert r.headers["X-Trace-Id"] == "t-9"
+
+
+def test_ui_is_served(sim):
+    c = _client(sim)
+    r = c.get("/")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"] and "ind-agent" in r.text
+    assert c.get("/static/app.js").status_code == 200 and c.get("/static/style.css").status_code == 200
+
+
+def test_dev_endpoints_disabled_by_default(sim):
+    c = _client(sim)
+    assert c.get("/dev/defaults").status_code == 404
+    assert c.post("/dev/token", json={"tenant": "acme"}).status_code == 404
+
+
+def test_dev_endpoints_in_dev_mode(sim, monkeypatch):
+    from copilot.config import get_settings
+
+    monkeypatch.setenv("COPILOT_DEV_MODE", "true")
+    get_settings.cache_clear()
+    try:
+        c = _client(sim)
+        d = c.get("/dev/defaults").json()
+        assert d["tenants"] == ["acme", "globex"] and "as_of" in d
+        tok = c.post("/dev/token", json={"tenant": "acme"}).json()["token"]
+        assert c.post("/investigate", json=BODY, headers={"Authorization": f"Bearer {tok}"}).status_code == 200
+        assert c.post("/dev/token", json={"tenant": "evil"}).status_code == 400
+    finally:
+        monkeypatch.delenv("COPILOT_DEV_MODE")
+        get_settings.cache_clear()
+
+
+def test_ui_never_uses_innerhtml():
+    from copilot.api import WEB_DIR
+
+    assert "innerHTML" not in (WEB_DIR / "app.js").read_text(encoding="utf-8")
