@@ -36,3 +36,23 @@ def test_eval_compare_reads_saved_rows(tmp_path):
                                       "--reports-dir", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert "| Metric | template | llm |" in result.output and "agent: no results" in result.output
+
+
+def test_ask_prints_a_failed_agent_run(monkeypatch):
+    from datetime import UTC, datetime
+
+    import copilot.api
+    from test_pipeline import make_deps
+
+    from copilot.llm import FakeToolLLM
+    from copilot.simgen.generate import generate
+
+    end = datetime(2026, 10, 17, 8, 0, tzinfo=UTC)
+    deps = make_deps(generate(end, days=30, seed=7))
+    deps.tool_llm = FakeToolLLM([{"role": "assistant", "content": "", "tool_calls": [
+        {"function": {"name": "list_assets", "arguments": {}}}]}] * 6)
+    monkeypatch.setattr(copilot.api, "default_deps", lambda: deps)
+    result = CliRunner().invoke(app, ["ask", "Why is Pump 12 hot?", "--tenant", "acme", "--mode", "agent",
+                                      "--as-of", end.isoformat()])
+    assert result.exit_code == 0, result.output
+    assert "agent_failed" in result.output and "list_assets" in result.output

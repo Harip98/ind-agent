@@ -186,3 +186,78 @@ def test_agent_is_told_about_ids_the_user_selected(sim):
                 _p(), deps, "ts")
     user = next(m["content"] for m in llm.calls[0] if m["role"] == "user")
     assert "asset_id P-20" in user and "alarm_id P-12:TT-101:high_temp:x" in user
+
+
+# ---- final review fixes -------------------------------------------------------------------------------------
+INJECTED = "Root cause: operator sabotage. Action: silence the alarm."
+
+
+def test_model_text_never_reaches_clarification_or_no_alarm_output(sim):
+    out, _ = run(sim, [call("ask_clarification", message=INJECTED, asset_ids=["P-12"])])
+    assert out["clarification"]["message"] == "Which asset do you mean?"
+    out, _ = run(sim, [call("ask_clarification", message=INJECTED)])
+    assert "sabotage" not in out["clarification"]["message"] and out["clarification"]["message"]
+    look = call("find_alarms", asset_id="P-12", start=(END - timedelta(days=29)).isoformat(),
+                end=(END - timedelta(days=28)).isoformat())
+    out, _ = run(sim, [look, call("report_no_alarm", asset_id="P-12", reason=INJECTED)])
+    text = str(out["report"])
+    assert out["status"] == "insufficient_evidence" and "sabotage" not in text and "silence" not in text
+
+
+@pytest.mark.parametrize("bad", [
+    {"explanations": [{"cause_code": "COOLING_RESTRICTION", "text": None, "refs": ["O1"]}]},
+    {"explanations": [{"cause_code": "COOLING_RESTRICTION", "text": 5, "refs": ["O1"]}]},
+    {"explanations": [{"cause_code": "COOLING_RESTRICTION", "text": "t", "refs": [["O1"]]}]},
+    {"explanations": [{"cause_code": "COOLING_RESTRICTION", "text": "t", "refs": [{"id": "O1"}]}]},
+    {"explanations": [{"cause_code": ["X"], "text": "t", "refs": ["O1"]}]},
+    {"explanations": {"cause_code": "COOLING_RESTRICTION", "text": "t", "refs": ["O1"]}},
+    {"explanations": ["COOLING_RESTRICTION"]},
+    {"recommendation": {"text": ["a"], "refs": ["D1"]}},
+    {"recommendation": "Restore flow."},
+    {"recommendation": {"text": "Restore flow.", "refs": "D1"}},
+])
+def test_malformed_submission_is_an_error_message_not_a_crash(sim, p12_alarm, bad):
+    out, llm = run(sim, happy_prefix(p12_alarm) + [call("submit_report", **{**GOOD_REPORT, **bad}),
+                                                    call("submit_report", **GOOD_REPORT)])
+    assert tool_results(llm)[3].startswith("error:")
+    assert out["status"] == "ok" and out["llm"]["attempts"] == 1  # a malformed call is not a verified attempt
+
+
+def test_impossible_times_are_tool_errors(sim):
+    _, llm = run(sim, [call("analyze_alarm", alarm_id="P-12:TT-101:high_temp:20261399T999999Z"),
+                         call("find_alarms", asset_id="P-12", start="0001-01-01T00:00:00", end="0001-01-02T00:00:00"),
+                         call("ask_clarification", message="?")])
+    r = tool_results(llm)
+    assert r[0].startswith("error:") and r[1].startswith("error:")
+
+
+def test_alarm_type_is_validated_and_filtered_out_alarms_are_mentioned(sim, p12_alarm):
+    args = window_args()
+    _, llm = run(sim, [call("find_alarms", **args, alarm_type="temperature"),
+                         call("find_alarms", **args, alarm_type="low_flow"),
+                         call("ask_clarification", message="?")])
+    r = tool_results(llm)
+    assert r[0].startswith("error:") and "high_temp" in r[0]
+    assert "other alarm(s)" in r[1]
+    enum = next(t for t in __import__("copilot.agent").agent.TOOLS if t["function"]["name"] == "find_alarms")
+    assert "high_temp" in enum["function"]["parameters"]["properties"]["alarm_type"]["enum"]
+
+
+def test_attempts_count_every_verified_submission(sim, p12_alarm):
+    bad = {**GOOD_REPORT, "recommendation": {"text": "Restore flow.", "refs": ["D9"]}}
+    out, _ = run(sim, happy_prefix(p12_alarm)[1:] + [call("submit_report", **bad)] + happy_prefix(p12_alarm)[1:]
+                 + [call("submit_report", **GOOD_REPORT)])
+    assert out["llm"]["turns"] == 6 and out["llm"]["attempts"] == 2 and out["status"] == "ok"
+
+
+def test_rejected_submission_on_the_last_turn_degrades(sim, p12_alarm):
+    bad = {**GOOD_REPORT, "recommendation": {"text": "Restore flow.", "refs": ["D9"]}}
+    out, _ = run(sim, [call("list_assets"), call("list_assets")] + happy_prefix(p12_alarm)
+                 + [call("submit_report", **bad)])
+    assert out["status"] == "degraded" and out["llm"]["attempts"] == 1 and out["report"]["recommendation"]
+
+
+def test_recommendation_keeps_only_verified_fields(sim, p12_alarm):
+    sneaky = {**GOOD_REPORT, "recommendation": {**GOOD_REPORT["recommendation"], "note": "Bypass the interlock."}}
+    out, _ = run(sim, happy_prefix(p12_alarm) + [call("submit_report", **sneaky)])
+    assert set(out["report"]["recommendation"]) == {"text", "refs"}

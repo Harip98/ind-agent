@@ -36,7 +36,11 @@ TOOL_RESULT_MAX = 4000
 MAX_WINDOW = timedelta(days=30)
 MAX_ALARM_ROWS = 20
 _ID = re.compile(r"^[A-Za-z0-9_:-]{1,140}$")
-FINAL_TOOLS = {"submit_report", "ask_clarification", "report_no_alarm"}
+ALARM_TYPES = tuple(f"{d}_{k}" for k in ("temp", "flow", "pressure", "current", "vibration")
+                    for d in ("high", "low")) + ("bad_quality",)
+# User-facing texts are fixed: free text the model writes outside submit_report is never verified, so it is not shown.
+ASK_ASSET = "Which asset do you mean?"
+ASK_UNCLEAR = "I could not tell which asset or alarm you mean. Name one of your assets (for example its id) and when."
 
 SYSTEM_PROMPT = """You investigate equipment alarms for one plant using read-only tools. You cannot change equipment.
 Work in this order:
@@ -63,7 +67,7 @@ TOOLS = [
     _fn("find_alarms", "Alarms raised on one asset between start and end (at most 30 days).",
         {"asset_id": {"type": "string"}, "start": {"type": "string", "description": "ISO 8601"},
          "end": {"type": "string", "description": "ISO 8601"},
-         "alarm_type": {"type": "string", "description": "optional, e.g. high_temp"}},
+         "alarm_type": {"type": "string", "enum": list(ALARM_TYPES), "description": "optional filter"}},
         ["asset_id", "start", "end"]),
     _fn("analyze_alarm", "Analyze the readings around one alarm: observations (O#) and ranked candidate causes.",
         {"alarm_id": {"type": "string"}}, ["alarm_id"]),
@@ -131,7 +135,6 @@ class Session:
         self.final: str | None = None  # report | degraded | clarification | no_alarm
         self.report: dict | None = None
         self.clarification: dict | None = None
-        self.no_alarm_reason = ""
 
     # ---- prompt -------------------------------------------------------------------------------------
     def opening(self) -> str:
@@ -156,14 +159,19 @@ class Session:
             return f"error: {exc}"
         except NotFound:
             return "error: not found"
+        except (ValueError, OverflowError) as exc:  # e.g. an impossible date inside an id
+            return f"error: invalid argument ({type(exc).__name__})"
 
     def _time(self, args: dict, key: str) -> datetime:
         raw = _str(args, key, limit=40)
         try:
             t = datetime.fromisoformat(raw)
-        except ValueError:
+            t = (t if t.tzinfo else t.replace(tzinfo=ZoneInfo(self.tz))).astimezone(UTC)
+        except (ValueError, OverflowError):
             raise ToolError(f"{key} must be an ISO 8601 date-time, e.g. 2026-10-16T00:00:00+05:30") from None
-        return (t if t.tzinfo else t.replace(tzinfo=ZoneInfo(self.tz))).astimezone(UTC)
+        if abs(t - self.as_of) > timedelta(days=366):
+            raise ToolError(f"{key} must be within a year of the current time")
+        return t
 
     def tool_list_assets(self, args: dict) -> str:
         return "\n".join(f"{a.id}: {a.name}, model {a.model}, site {a.site}; sensors: "
@@ -174,6 +182,8 @@ class Session:
         asset_id = _ident(args, "asset_id")
         start, end = self._time(args, "start"), self._time(args, "end")
         alarm_type = _str(args, "alarm_type", required=False, limit=40)
+        if alarm_type and alarm_type not in ALARM_TYPES:
+            raise ToolError("alarm_type must be one of " + ", ".join(ALARM_TYPES))
         if end <= start:
             raise ToolError("end must be after start")
         if end - start > MAX_WINDOW:
@@ -181,15 +191,16 @@ class Session:
         asset = self.assets.get(asset_id)
         if asset is None:
             raise NotFound(asset_id)
-        alarms, _ = self.ds.alarms(asset_id, start, end)
-        if alarm_type:
-            alarms = [a for a in alarms if a.alarm_type == alarm_type]
+        every, _ = self.ds.alarms(asset_id, start, end)
+        alarms = [a for a in every if a.alarm_type == alarm_type] if alarm_type else every
         self.searched_assets.add(asset_id)
         self.asset = self.asset or asset
         self.window = (start, end)
         self.alarms_seen = [_alarm_dict(a) for a in alarms]
         if not alarms:
-            return f"No alarms on {asset_id} between {_local(start, self.tz)} and {_local(end, self.tz)}."
+            what = f"{alarm_type} alarms" if alarm_type else "alarms"
+            other = f" {len(every)} other alarm(s) exist in that window." if every else ""
+            return f"No {what} on {asset_id} between {_local(start, self.tz)} and {_local(end, self.tz)}.{other}"
         rows = [f"{a.id} | {a.tag} | {a.alarm_type} | {_local(a.raised_at, self.tz)} | {a.message}"
                 for a in alarms[:MAX_ALARM_ROWS]]
         more = f"\n...and {len(alarms) - MAX_ALARM_ROWS} more" if len(alarms) > MAX_ALARM_ROWS else ""
@@ -214,7 +225,7 @@ class Session:
         self.asset = self.assets[_ALARM_ID.match(alarm_id).group(1)]
         self.alarm = alarm
         self.analysis, self.candidates = collect(self.ds, self.asset, alarm, self.deps, self.tz)
-        self.hits, self.searched, self.submissions = [], False, 0  # evidence belongs to this alarm only
+        self.hits, self.searched = [], False  # evidence belongs to this alarm only
         obs = "\n".join(f"{o.id}: {o.text}" for o in self.analysis.observations)
         cands = "\n".join(f"{i}. {c.code} ({c.label}, score {c.score:.2f}); evidence {', '.join(c.refs) or '-'}"
                           for i, c in enumerate(self.candidates, start=1)) or "none: no known fault signature"
@@ -249,8 +260,8 @@ class Session:
             raise ToolError("call analyze_alarm first")
         if not self.searched:
             raise ToolError("call search_procedures first; the recommendation must cite a procedure (D#)")
+        report = _report_args(args)
         self.submissions += 1
-        report = {"explanations": args.get("explanations"), "recommendation": args.get("recommendation")}
         ev = self.evidence()
         errors = verify(report, ev)
         if not errors:
@@ -263,21 +274,46 @@ class Session:
         return "rejected; fix these and call submit_report again:\n- " + "\n- ".join(errors)
 
     def tool_ask_clarification(self, args: dict) -> str:
-        message = _str(args, "message")
+        _str(args, "message", limit=2000)  # required by the schema, but never shown (not verifiable)
         ids = args.get("asset_ids") or []
         ids = [i for i in ids if isinstance(i, str)] if isinstance(ids, list) else []
-        options = [{"label": f"{a.id} ({a.name})", "asset_id": a.id} for i in ids if (a := self.assets.get(i))]
-        self.final, self.clarification = "clarification", {"message": message, "options": options}
+        options = [{"label": f"{a.id} ({a.name})", "asset_id": a.id} for i in dict.fromkeys(ids)
+                   if (a := self.assets.get(i))]
+        self.final = "clarification"
+        self.clarification = {"message": ASK_ASSET if options else ASK_UNCLEAR, "options": options}
         return "sent"
 
     def tool_report_no_alarm(self, args: dict) -> str:
         asset_id = _ident(args, "asset_id")
-        reason = _str(args, "reason")
+        _str(args, "reason", limit=2000)  # never shown (not verifiable)
         if asset_id not in self.searched_assets:
             raise ToolError("call find_alarms on that asset first")
         self.asset = self.assets[asset_id]
-        self.final, self.no_alarm_reason = "no_alarm", reason
+        self.final = "no_alarm"
         return "recorded"
+
+
+def _strings(value, what: str) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ToolError(f'{what} must be a list of strings such as ["O1"]')
+    return value
+
+
+def _report_args(args: dict) -> dict:
+    """Shape-check submit_report arguments; the verifier then checks the content."""
+    exps, rec = args.get("explanations"), args.get("recommendation")
+    if not isinstance(exps, list) or not exps or not all(isinstance(e, dict) for e in exps):
+        raise ToolError("explanations must be a non-empty list of objects {cause_code, text, refs}")
+    out = []
+    for i, e in enumerate(exps, start=1):
+        if not isinstance(e.get("cause_code"), str) or not isinstance(e.get("text"), str):
+            raise ToolError(f"explanation {i}: cause_code and text must be strings")
+        out.append({"cause_code": e["cause_code"], "text": e["text"],
+                    "refs": _strings(e.get("refs"), f"explanation {i}: refs")})
+    if not isinstance(rec, dict) or not isinstance(rec.get("text"), str):
+        raise ToolError("recommendation must be an object {text, refs} with a string text")
+    return {"explanations": out, "recommendation": {"text": rec["text"],
+                                                    "refs": _strings(rec.get("refs"), "recommendation refs")}}
 
 
 def _calls(message: dict) -> list[tuple[str, dict]]:
@@ -322,6 +358,8 @@ def run_agent(req: InvestigateRequest, principal: Principal, deps: PipelineDeps,
             messages.append({"role": "tool", "tool_name": name, "content": s.dispatch(name, args)})
             if s.final:
                 break
+    if s.final is None and s.submissions:  # last turn spent on a rejected submission: same as two rejections
+        s.final, s.report = "degraded", template_report(s.evidence())
     stats["attempts"] = s.submissions
     stats["verifier_errors"] = s.verifier_errors
     return _response(s, req, trace_id, stats, int((time.perf_counter() - t_start) * 1000))
@@ -341,9 +379,10 @@ def _response(s: Session, req: InvestigateRequest, trace_id: str, stats: dict, a
         out["status"], out["clarification"] = "needs_clarification", s.clarification
     elif s.final == "no_alarm":
         out["status"] = "insufficient_evidence"
-        out["report"] = {"summary": f"No matching alarm was found for {s.asset.name} ({s.asset.id}).",
+        where = f" between {_local(s.window[0], s.tz)} and {_local(s.window[1], s.tz)}" if s.window else ""
+        out["report"] = {"summary": f"No matching alarm was found for {s.asset.name} ({s.asset.id}){where}.",
                          "observations": [], "possible_explanations": [], "recommendation": None,
-                         "insufficient_evidence": [s.no_alarm_reason[:300] or "No matching alarm."]}
+                         "insufficient_evidence": ["No matching alarm in the searched window."]}
     elif s.final in ("report", "degraded"):
         out["status"] = "ok" if s.final == "report" else "degraded"
         ev = s.evidence()

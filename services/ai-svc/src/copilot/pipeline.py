@@ -123,7 +123,8 @@ def final_report(ev: Evidence, report: dict) -> dict:
         "summary": summary_text(ev),
         "observations": [{"id": o.id, "text": o.text} for o in ev.observations],
         "possible_explanations": explanations,
-        "recommendation": report["recommendation"],
+        "recommendation": {"text": report["recommendation"]["text"],  # only verified fields
+                           "refs": list(report["recommendation"].get("refs", []))},
         "insufficient_evidence": insufficient,
     }
 

@@ -146,8 +146,9 @@ def summarize(rows: list[dict], mode: str = "template") -> dict:
                          "p95": _pct([r["timings"][step] for r in rows if step in r["timings"]], 0.95)}
                   for step in STEPS},
     }
-    tokens = [r["tokens"] for r in rows if r.get("tokens")]
-    seconds = [r["llm_seconds"] for r in rows if r.get("llm_seconds")]
+    # cost of a full investigation: rows that expect a written report (comparable across llm and agent modes)
+    tokens = [r["tokens"] for r in full if r.get("tokens")]
+    seconds = [r["llm_seconds"] for r in full if r.get("llm_seconds")]
     out["cost"] = {
         "mode": mode,
         "tokens_mean": round(statistics.fmean(tokens)) if tokens else None,

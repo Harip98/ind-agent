@@ -115,3 +115,14 @@ def test_anchor_mismatch_refuses(tmp_path):
         check_anchor(tmp_path, meta)
     meta.write_text(json.dumps({"end": "e1", "days": 30, "seed": 7}))
     assert check_anchor(tmp_path, meta)["end"] == "e1"
+
+
+def test_verified_is_only_scored_for_cases_that_expect_a_report():
+    missing = EvalCase("M-02", "dev", "missing_evidence", "acme", "q", "x", "insufficient_evidence",
+                       None, "P-10", None, ())
+    agent_resp = {"status": "insufficient_evidence", "report": {"summary": "none"}, "citations": [],
+                  "timings_ms": {}, "llm": {"turns": 2, "attempts": 0, "prompt_tokens": 900, "completion_tokens": 40,
+                                            "seconds": 20.0}}
+    s = score_case(missing, agent_resp, None, mode="agent")
+    assert s["verified"] is None and s["first_attempt_ok"] is None
+    assert score_case(missing, None, "LLMUnavailable: x", mode="agent")["verified"] is None

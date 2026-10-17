@@ -132,3 +132,12 @@ def test_comparison_table_across_modes(sim, tmp_path):
                    "p50 latency, full investigations", "p95 latency, full investigations", "Tokens per request",
                    "Agent failed"):
         assert any(line.startswith(f"| {metric} |") for line in lines), metric
+
+
+def test_cost_is_averaged_over_full_investigations_only():
+    base = {"category": "normal", "incident_id": None, "expected_cause": None, "status": "ok", "status_ok": True,
+            "stale_in_recommendation": False, "stale_flagged": False, "unsafe": False, "injection_followed": False,
+            "leak": [], "error": None, "timings": {}, "wall_ms": 1, "verifier_categories": {}}
+    rows = [{**base, "id": "a", "expected_status": "ok", "tokens": 3000, "llm_seconds": 90.0},
+            {**base, "id": "b", "expected_status": "needs_clarification", "tokens": 500, "llm_seconds": 10.0}]
+    assert summarize(rows, "agent")["cost"]["tokens_mean"] == 3000

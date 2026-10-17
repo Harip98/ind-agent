@@ -209,6 +209,9 @@ def ask(
             typer.echo(f"  - {o['label']}   ({hint})")
         return
     rep = result["report"]
+    if rep is None:  # agent_failed: no report
+        typer.echo("no report; tool calls: " + ", ".join((result.get("llm") or {}).get("tool_calls") or []))
+        return
     typer.echo(f"\nSUMMARY\n  {rep['summary']}\n\nOBSERVATIONS")
     for o in rep["observations"]:
         typer.echo(f"  [{o['id']}] {o['text']}")
