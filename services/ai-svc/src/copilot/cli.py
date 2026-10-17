@@ -177,7 +177,7 @@ def ask(
     question: str,
     tenant: str = typer.Option(..., help="Tenant id (a dev token is minted for it)."),
     as_of: str | None = typer.Option(None, help="ISO-8601 'now' for relative times; default: simgen end."),
-    mode: str = typer.Option("llm", help="llm | template"),
+    mode: str = typer.Option("llm", help="llm | template | agent"),
     strategy: str | None = typer.Option(None, help="vector | hybrid | hybrid_rerank"),
     asset_id: str | None = typer.Option(None, help="Answer an asset clarification."),
     alarm_id: str | None = typer.Option(None, help="Answer an event clarification."),
@@ -308,7 +308,7 @@ def _fingerprint(split: str, mode: str, settings) -> dict:
 @app.command("eval")
 def eval_e2e(
     split: str = typer.Option("dev", help="dev | test"),
-    mode: str = typer.Option("template", help="template | llm"),
+    mode: str = typer.Option("template", help="template | llm | agent"),
     limit: int | None = typer.Option(None, help="Run at most N new cases (resumable)."),
     fresh: bool = typer.Option(False, help="Discard earlier results for this split and mode."),
     retry_errors: bool = typer.Option(False, help="Re-run cases whose earlier attempt ended in an error."),
@@ -321,8 +321,8 @@ def eval_e2e(
     from copilot.eval.dataset import check_anchor, load_dataset
     from copilot.eval.e2e import EvalStateError, render_e2e_report, run_cases, summarize
 
-    if split not in ("dev", "test") or mode not in ("template", "llm"):
-        raise typer.BadParameter("split must be dev|test and mode template|llm")
+    if split not in ("dev", "test") or mode not in ("template", "llm", "agent"):
+        raise typer.BadParameter("split must be dev|test and mode template|llm|agent")
     datasets = REPO_ROOT / "eval" / "datasets"
     check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
     cases = load_dataset(datasets, split)

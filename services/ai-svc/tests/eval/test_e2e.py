@@ -88,3 +88,30 @@ def test_summary_and_report(sim, tmp_path):
     assert "| normal |" in md and "note one" in md and "p95" in md and "95% CI" in md
     assert "deterministic" in md
     json.dumps(s)
+
+
+def test_agent_mode_report(sim, tmp_path):
+    from datetime import timedelta
+
+    from test_agent import GOOD_REPORT, call, happy_prefix
+    from test_pipeline import FakeDataSvc
+
+    from copilot.llm import FakeToolLLM
+
+    alarms, _ = FakeDataSvc(sim, "acme").alarms("P-12", END - timedelta(days=2), END)
+    alarm = min((a for a in alarms if a.tag.startswith("TT")), key=lambda a: a.raised_at)
+    look = call("find_alarms", asset_id="P-12", start=(END - timedelta(days=1)).isoformat(), end=END.isoformat(),
+                alarm_type="high_vibration")
+    deps = make_deps(sim)
+    deps.tool_llm = FakeToolLLM(happy_prefix(alarm) + [call("submit_report", **GOOD_REPORT)]
+                                + [look, call("report_no_alarm", asset_id="P-12", reason="none")]
+                                + [call("list_assets")] * 6)
+    rows = run_cases(CASES, deps, "agent", tmp_path / "a.jsonl", fingerprint={**FP, "mode": "agent"})
+    assert [r["status"] for r in rows] == ["ok", "insufficient_evidence", "agent_failed"]
+    s = summarize(rows, mode="agent")
+    assert s["agent"] == {"turns_mean": 4.0, "turns_max": 6, "agent_failed": 1, "tool_calls": {
+        "find_alarms": 2, "analyze_alarm": 1, "search_procedures": 1, "submit_report": 1, "report_no_alarm": 1,
+        "list_assets": 6}}
+    assert s["latency"]["steps"]["agent"]["p50"] is not None
+    md = render_e2e_report(s, rows, "Agent report", [], mode="agent")
+    assert "the agent chooses the asset and the alarm" in md and "agent_failed 1" in md and "turns" in md

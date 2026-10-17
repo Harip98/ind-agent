@@ -156,3 +156,24 @@ def test_ui_never_uses_innerhtml():
 def test_ui_sets_no_inline_style_attributes():
     js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
     assert "style:" not in js and 'setAttribute("style"' not in js  # blocked by style-src 'self'
+
+
+def test_agent_mode_is_accepted_and_reports_llm_down_as_503(sim):
+    from copilot.llm import FakeToolLLM
+
+    deps = PipelineDeps(datasvc=lambda p, t: FakeDataSvc(sim, p.tenant_id), retriever=FakeRetriever(), llm=None,
+                        signatures=load_signatures(), settings=Settings(),
+                        tool_llm=FakeToolLLM([{"role": "assistant", "content": "", "tool_calls": [
+                            {"function": {"name": "ask_clarification", "arguments": {"message": "Which pump?"}}}]},
+                            OllamaError("down")]))
+    c = TestClient(create_app(lambda: deps))
+    r = c.post("/investigate", json={**BODY, "mode": "agent"}, headers=_auth())
+    assert r.status_code == 200 and r.json()["status"] == "needs_clarification" and r.json()["mode"] == "agent"
+    r = c.post("/investigate", json={**BODY, "mode": "agent"}, headers=_auth())
+    assert r.status_code == 503 and r.json()["error"]["code"] == "llm_unavailable"
+
+
+def test_default_deps_build_a_tool_llm():
+    from copilot.api import default_deps
+
+    assert default_deps().tool_llm is not None

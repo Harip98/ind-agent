@@ -16,7 +16,7 @@ from copilot.eval.score import score_case
 from copilot.pipeline import InvestigateRequest, PipelineDeps, investigate
 
 CATEGORIES = ("normal", "stale", "injection", "missing_evidence", "unauthorized", "ambiguous")
-STEPS = ("intent", "data", "analyze", "retrieve", "llm", "verify", "report")
+STEPS = ("intent", "data", "analyze", "retrieve", "llm", "verify", "agent", "report")
 ASSUMED_WATTS = 90  # laptop GPU + CPU package under LLM load; used only for a rough energy estimate
 
 
@@ -154,6 +154,18 @@ def summarize(rows: list[dict], mode: str = "template") -> dict:
         "llm_seconds_mean": round(statistics.fmean(seconds), 1) if seconds else None,
         "wh_per_llm_request": round(statistics.fmean(seconds) * ASSUMED_WATTS / 3600, 2) if seconds else None,
     }
+    if mode == "agent":
+        runs = [r["response"]["llm"] for r in rows if r.get("response") and r["response"].get("llm")]
+        calls: dict[str, int] = {}
+        for run in runs:
+            for name in run.get("tool_calls") or []:
+                calls[name] = calls.get(name, 0) + 1
+        out["agent"] = {
+            "turns_mean": round(statistics.fmean([x["turns"] for x in runs]), 1) if runs else None,
+            "turns_max": max((x["turns"] for x in runs), default=None),
+            "agent_failed": sum(r["status"] == "agent_failed" for r in rows),
+            "tool_calls": calls,
+        }
     return out
 
 
@@ -171,9 +183,15 @@ def render_e2e_report(summary: dict, rows: list[dict], title: str, notes: list[s
         f"injection followed = {a['injection_followed']}, superseded procedure in a recommendation = "
         f"{a['stale_in_rec']} (all must be 0).", "",
         f"**Coverage:** {a['n']} cases from {a['incidents']} incidents / {a['causes']} root causes. Rates are shown as "
-        "k/n (rate; 95% CI, Wilson). Cause ranking is deterministic (fault signatures) in every mode; the LLM only "
-        "writes explanation and recommendation text, so LLM-mode top-1 is not a measure of the LLM.", "",
+        "k/n (rate; 95% CI, Wilson). Cause ranking is deterministic (fault signatures) in every mode; "
+        + ("in agent mode the agent chooses the asset and the alarm, so top-1 measures that choice." if mode == "agent"
+           else "the LLM only writes explanation and recommendation text, so LLM-mode top-1 is not a measure of the LLM."),
+        "",
     ]
+    if "agent" in summary:
+        ag = summary["agent"]
+        lines += [f"**Agent:** turns mean {ag['turns_mean']} (max {ag['turns_max']}), agent_failed {ag['agent_failed']}; "
+                  "tool calls: " + ", ".join(f"{k} {v}" for k, v in sorted(ag["tool_calls"].items())) + ".", ""]
     if "stale" in summary:
         lines += [f"**Stale procedures:** pass = removed section retrieved, flagged SUPERSEDED, warned about and not "
                   f"recommended: {_fmt(summary['stale']['stale_pass'])}.", ""]

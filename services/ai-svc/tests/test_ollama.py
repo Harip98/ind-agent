@@ -66,3 +66,24 @@ def test_invalid_json_output_is_an_output_error_not_unavailability():
     with pytest.raises(OllamaOutputError):
         _client(lambda r: httpx.Response(200, json={"message": {"content": '{"a": "unterminated'}})).chat_json(
             "m", "s", "u", {})
+
+
+def test_chat_tools_sends_tools_and_returns_the_assistant_message():
+    seen = {}
+
+    def handler(request):
+        seen["body"] = __import__("json").loads(request.read())
+        return httpx.Response(200, json={"message": {"role": "assistant", "content": "", "tool_calls": [
+            {"function": {"name": "list_assets", "arguments": {}}}]}, "prompt_eval_count": 7, "eval_count": 3,
+            "total_duration": 2_000_000_000})
+
+    msg, usage = _client(handler).chat_tools("m", [{"role": "user", "content": "hi"}], [{"type": "function"}])
+    assert seen["body"]["tools"] == [{"type": "function"}] and seen["body"]["stream"] is False
+    assert seen["body"]["options"]["temperature"] == 0
+    assert msg["tool_calls"][0]["function"]["name"] == "list_assets"
+    assert usage == {"prompt_tokens": 7, "completion_tokens": 3, "seconds": 2.0}
+
+
+def test_chat_tools_http_error_is_ollama_error():
+    with pytest.raises(OllamaError, match="chat"):
+        _client(lambda r: httpx.Response(500, text="boom")).chat_tools("m", [], [])
