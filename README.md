@@ -39,6 +39,18 @@ uv run copilot search --tenant acme --model CP-200 "bearing temperature high, co
 uv run copilot eval-retrieval                 # writes eval/reports/<date>-retrieval.md
 ```
 
+## Investigate an incident
+```bash
+cd services/ai-svc
+uv run copilot ask --tenant acme --mode template "Investigate yesterday's temperature alarm on Pump 12"
+uv run copilot ask --tenant acme "Investigate yesterday's temperature alarm on Pump 12"   # LLM prose, ~1 min
+uv run copilot serve                                    # HTTP API on 127.0.0.1:8000
+TOKEN=$(uv run copilot devtoken --tenant acme)
+curl -X POST localhost:8000/investigate -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -d '{"question": "Investigate yesterday temperature alarm on Pump 12", "mode": "template"}'
+```
+`copilot ask` defaults `as_of` to the end of the last `simgen` run (`data/simgen_run.json`) so "yesterday" refers to the generated data; the HTTP API defaults to now, so pass `"as_of"` explicitly when the data was generated on an earlier day.
+
 ## Tests
 ```bash
 cd services/ai-svc

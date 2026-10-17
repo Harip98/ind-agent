@@ -174,20 +174,28 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
               └─► response (report + series + citations + trace)
 ```
 
-1. **Intent** — LLM with Ollama JSON-schema `format` returns
-   `{asset_mention, alarm_hint, time_expression}`. Code resolves the asset against
-   `GET /v1/assets` (fuzzy: "Pump 12" → `P-12`) and the time expression against `as_of` (default
-   now) in the tenant's timezone. Unknown or ambiguous → `status: needs_clarification` with options.
-2. **Alarms** — fetch alarms for the resolved window; select those matching `alarm_hint`.
-   None → `status: insufficient_evidence`.
-3. **Readings** — window `raised_at − 6 h … raised_at + 2 h` for the alarmed tag plus its
-   `related_tags`.
-4. **Analyzers** (no LLM) — trend/slope, rate of change, threshold crossings, co-movement of
-   related signals, data gaps and flat-lines. Each finding is an `Observation`:
-   `{id: "O3", kind, tag, text, values: {...}, window}`.
-5. **Candidate causes** — `signatures.yaml` rules map observation patterns to cause codes
-   (`COOLING_RESTRICTION`, `BEARING_WEAR`, `SENSOR_DRIFT`, `DRY_RUN`, …), each with the observation
-   IDs that triggered it.
+1. **Intent** — **rules first** (measured: qwen2.5:7b runs at ~4 tok/s on the 4 GB GPU, so an
+   LLM parse costs 10–75 s). Regexes resolve the asset against `GET /v1/assets` ("Pump 12", "p12",
+   "P-12" → `P-12`; "the compressor" when only one exists), the time expression against `as_of` in
+   the tenant's timezone ("yesterday", "last night", "3 days ago", "last N days" capped at 30,
+   "on 12 Oct"; none → last 7 days, reported as an assumption) and alarm keywords. Only when no asset
+   is mentioned at all does the LLM extract an asset name (JSON schema), which the same resolver
+   maps. Unknown (incl. another tenant's) or ambiguous asset → `status: needs_clarification`.
+2. **Alarms** — fetch alarms for the resolved window and keep those matching the keywords. Alarms
+   within 2 h of an event's first alarm form one event; the earliest alarm is investigated. No
+   event → `insufficient_evidence`; several events → `needs_clarification` listing them.
+3. **Readings** — for every sensor of the asset, two windows: short (`−6 h … +2 h`, 1-min) and
+   long (`−48.5 h … +0.5 h`, ≤ 2000 points).
+4. **Analyzers** (no LLM) — per sensor: value at the alarm vs the same time of day 24 h and 48 h
+   earlier (so the daily cycle cancels), change in the last hour (sudden drops), multi-day rises,
+   gaps / flat-lines / bad samples; per-kind significance thresholds. Each finding is an
+   `Observation` `{id: "O3", kind, tag, text, values}` and sets boolean features
+   (`bearing_temp.rising`, `flow.sudden_drop`, `related.all_flat`, `alarm.short`, …).
+5. **Candidate causes** — `signatures.yaml` maps sensor roles per model and gives each cause
+   `require` / `support` / `exclude` features; score = 0 if a requirement fails, else
+   0.5 + 0.5 × (matched support / support). Candidates carry the observation ids that support them.
+   On simulated data the top candidate matches the injected fault 225/225 across 5 seeds × 3 end
+   times (circular by construction; see M4 for honest end-to-end numbers).
 6. **Retrieval** — query from alarm type + asset model + candidate causes. SQL filters:
    tenant ∈ {caller tenant, shared}, `asset_models` overlap, `is_current`. If only superseded
    versions match, those are returned with a `stale` flag. Strategies:
@@ -252,7 +260,9 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
 |---|---|
 | Ollama down / timeout | `503`; `mode=template` still works (no LLM) |
 | data-svc down | `503`; no partial report |
-| Unknown / ambiguous asset or time | `200` with `status: needs_clarification` |
+| Unknown / ambiguous asset, or several alarm events | `200` with `status: needs_clarification` |
+| No time in the question | Last 7 days, listed in `query.assumptions` |
+| Embedding model down | Retrieval falls back to keyword (FTS) search; warning logged |
 | No matching alarm | `200` with `status: insufficient_evidence` |
 | Missing / flat-lined sensor data | Recorded as an observation, not an error |
 | Verifier fails twice | `200` with `status: degraded`, template report |

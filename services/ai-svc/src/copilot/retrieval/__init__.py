@@ -8,6 +8,8 @@ from psycopg.rows import dict_row
 from copilot.config import Settings
 from copilot.kb.corpus import SHARED
 from copilot.kb.embed import Embedder, to_pgvector
+from copilot.logjson import get_logger
+from copilot.ollama import OllamaError
 from copilot.retrieval.fusion import build_tsquery, rrf
 from copilot.retrieval.rerank import Reranker
 
@@ -80,19 +82,24 @@ class Retriever:
         if strategy == "hybrid_rerank" and self._reranker is None:
             raise ValueError("hybrid_rerank needs a reranker")
         params = {"shared": SHARED, "tenant": tenant_id, "model": asset_model, "n": CANDIDATES}
+        try:  # embed before opening the transaction; Ollama can be slow
+            qvec = to_pgvector(self._embedder.embed_query(query))
+        except OllamaError as exc:
+            get_logger().warning("embeddings unavailable; keyword search only",
+                                 extra={"fields": {"err": str(exc)}})
+            qvec = None
         with psycopg.connect(self._settings.dsn("kb_reader"), row_factory=dict_row) as conn:
             conn.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant_id,))
-            vector = self._vector(conn, params, query)
-            if strategy == "vector":
+            vector = self._vector(conn, params, qvec) if qvec else []
+            if strategy == "vector" and qvec:
                 return select_hits(vector, k)
             fused = self._fuse(vector, self._fulltext(conn, params, query))
-        if strategy == "hybrid":
+        if strategy in ("hybrid", "vector"):
             return select_hits(fused, k)
         scores = self._reranker.score(query, [h.content for h in fused])
         return select_hits([replace(h, score=s) for h, s in zip(fused, scores, strict=True)], k)
 
-    def _vector(self, conn: psycopg.Connection, params: dict, query: str) -> list[Hit]:
-        q = to_pgvector(self._embedder.embed_query(query))
+    def _vector(self, conn: psycopg.Connection, params: dict, q: str) -> list[Hit]:
         sql = _SELECT.format(score="1 - (c.embedding <=> %(q)s::vector)", extra="",
                              order="c.embedding <=> %(q)s::vector")
         return [Hit(**r) for r in conn.execute(sql, {**params, "q": q}).fetchall()]

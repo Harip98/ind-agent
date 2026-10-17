@@ -71,7 +71,7 @@ Exit criteria
 - pytest passes for sectioning, filters (tenant, current version, stale) and RRF.
 - Retrieval report with recall@5 / MRR / nDCG@5 for all three strategies.
 
-## M3 — Investigation pipeline & API
+## M3 — Investigation pipeline & API ✅ (2026-10-17)
 
 **Goal:** end-to-end `/investigate` producing verified reports.
 

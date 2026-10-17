@@ -77,3 +77,23 @@ def test_renumbered_superseded_section_never_outranks_current(retriever, strateg
     assert not any(h.stale for h in hits)
     assert not any(h.doc_id == "SOP-AC-05" and h.version == 1 for h in hits)
     assert any(h.section_id == "SOP-AC-05@v2#6" for h in hits)
+
+
+class DownEmbedder:
+    name = "down"
+    dims = 768
+
+    def embed_documents(self, texts):
+        from copilot.ollama import OllamaError
+        raise OllamaError("embedding failed: connection refused")
+
+    def embed_query(self, text):
+        return self.embed_documents([text])
+
+
+@pytest.mark.parametrize("strategy", STRATEGIES)
+def test_retrieval_falls_back_to_full_text_when_embeddings_are_down(settings, retriever, strategy):
+    down = Retriever(settings, DownEmbedder(), FakeReranker())
+    hits = down.search("acme", "cooling water restriction bearing temperature high", asset_model="CP-200",
+                       strategy=strategy)
+    assert hits and any(h.doc_id == "SOP-PUMP-07" for h in hits)

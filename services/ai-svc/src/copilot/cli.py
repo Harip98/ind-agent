@@ -144,3 +144,73 @@ def eval_retrieval(
     if any(r["leak"] for rows in results.values() for r in rows):
         typer.echo("ERROR: cross-tenant leak", err=True)
         raise typer.Exit(1)
+
+
+@app.command()
+def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
+    """Run the HTTP API (POST /investigate)."""
+    import uvicorn
+
+    from copilot.api import create_app
+
+    uvicorn.run(create_app(), host=host, port=port)
+
+
+def _default_as_of():
+    import json
+    from datetime import UTC, datetime
+
+    meta = REPO_ROOT / "data" / "simgen_run.json"
+    if meta.exists():
+        return datetime.fromisoformat(json.loads(meta.read_text(encoding="utf-8"))["end"])
+    return datetime.now(UTC)
+
+
+@app.command()
+def ask(
+    question: str,
+    tenant: str = typer.Option(..., help="Tenant id (a dev token is minted for it)."),
+    as_of: str | None = typer.Option(None, help="ISO-8601 'now' for relative times; default: simgen end."),
+    mode: str = typer.Option("llm", help="llm | template"),
+    strategy: str | None = typer.Option(None, help="vector | hybrid | hybrid_rerank"),
+    as_json: bool = typer.Option(False, "--json", help="Print the raw JSON response."),
+) -> None:
+    """Investigate a question end to end (in-process pipeline, real data-svc and Ollama)."""
+    import json
+    import secrets
+    from datetime import datetime
+
+    from copilot.api import default_deps
+    from copilot.auth import issue_token, verify_token
+    from copilot.pipeline import InvestigateRequest, investigate
+
+    settings = get_settings()
+    as_of_dt = datetime.fromisoformat(as_of) if as_of else _default_as_of()
+    principal = verify_token(issue_token(tenant, "cli-user", settings.jwt_secret), settings.jwt_secret)
+    result = investigate(InvestigateRequest(question, as_of_dt, mode, strategy), principal, default_deps(),
+                         secrets.token_hex(8))
+    if as_json:
+        typer.echo(json.dumps(result, indent=2, default=str))
+        return
+    typer.echo(f"status: {result['status']}   (as of {as_of_dt.isoformat()})")
+    if result["clarification"]:
+        typer.echo(result["clarification"]["message"])
+        for o in result["clarification"]["options"]:
+            typer.echo(f"  - {o}")
+        return
+    rep = result["report"]
+    typer.echo(f"\nSUMMARY\n  {rep['summary']}\n\nOBSERVATIONS")
+    for o in rep["observations"]:
+        typer.echo(f"  [{o['id']}] {o['text']}")
+    typer.echo("\nPOSSIBLE EXPLANATIONS")
+    for e in rep["possible_explanations"]:
+        typer.echo(f"  - {e['label']} ({e['confidence']}, score {e['score']}): {e['text']} {e['refs']}")
+    if rep["recommendation"]:
+        typer.echo(f"\nRECOMMENDATION\n  {rep['recommendation']['text']} {rep['recommendation']['refs']}")
+    for item in rep["insufficient_evidence"]:
+        typer.echo(f"  ! {item}")
+    typer.echo("\nCITATIONS")
+    for c in result["citations"]:
+        typer.echo(f"  [{c['ref']}] {c['doc_id']} v{c['version']} §{c['section']} {c['heading']}"
+                   + ("  [SUPERSEDED]" if c["stale"] else ""))
+    typer.echo(f"\ntimings_ms: {result['timings_ms']}   llm: {result['llm']}")
