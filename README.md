@@ -65,9 +65,11 @@ observation or the procedure text. Without `--dev`, paste a token from `copilot 
 ## Evaluation
 ```bash
 cd services/ai-svc
-uv run copilot eval-build                         # 150 cases from data/ground_truth.jsonl (dev 100 / frozen test 50)
+uv run copilot eval-build                         # 172 cases from data/ground_truth.jsonl (dev 112 / frozen test 60)
 uv run copilot eval --split dev --mode template   # ~35 s; writes eval/reports/e2e-dev-template.{jsonl,md}
 uv run copilot eval --split test --mode llm       # ~1 min per case on a 4 GB GPU; resumable
+uv run copilot eval --split test --mode agent     # M6: the LLM drives the tools itself; 1-3 min per case
+uv run copilot eval-compare --split test          # one table: template vs llm vs agent
 ```
 The dataset is anchored to one simulator run (`eval/datasets/anchor.json`); the runner refuses to score
 against different data. Reports: `eval/reports/`.
