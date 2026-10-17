@@ -69,3 +69,23 @@ def devtoken(
     from copilot.auth import issue_token
 
     typer.echo(issue_token(tenant, sub, get_settings().jwt_secret, ttl=timedelta(minutes=ttl_minutes)))
+
+
+@app.command()
+def ingest(
+    path: Path = typer.Option(REPO_ROOT / "corpus", help="Corpus directory."),
+    fake_embeddings: bool = typer.Option(False, help="Use the offline hashing embedder."),
+) -> None:
+    """Parse the corpus and write changed document versions to the knowledge base."""
+    from copilot.kb.corpus import load_corpus
+    from copilot.kb.embed import HashEmbedder, OllamaEmbedder
+    from copilot.kb.ingest import ingest as run_ingest
+    from copilot.ollama import OllamaClient
+
+    settings = get_settings()
+    embedder = HashEmbedder() if fake_embeddings else OllamaEmbedder(
+        OllamaClient(settings.ollama_url, settings.ollama_timeout_s), settings.embed_model)
+    docs = load_corpus(path)
+    stats = run_ingest(docs, settings, embedder)
+    typer.echo(f"{len(docs)} versions: {stats.written} written ({stats.chunks} chunks), "
+               f"{stats.skipped} unchanged")
