@@ -2,7 +2,7 @@ import json
 from datetime import UTC, datetime
 
 from copilot.simgen.generate import generate
-from copilot.simgen.loader import write_ground_truth
+from copilot.simgen.loader import write_ground_truth, write_run_metadata
 
 
 def test_write_ground_truth_jsonl(tmp_path):
@@ -12,3 +12,17 @@ def test_write_ground_truth_jsonl(tmp_path):
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == len(result.ground_truth)
     assert {r["incident_id"] for r in rows} >= {"INC-01", "INC-11"}
+
+
+def test_run_metadata_anchors_ground_truth_to_its_generation(tmp_path):
+    end = datetime(2026, 10, 17, 8, 0, tzinfo=UTC)
+    result = generate(end, days=30, seed=11)
+    path = tmp_path / "simgen_run.json"
+    write_run_metadata(result, path)
+    meta = json.loads(path.read_text(encoding="utf-8"))
+    assert meta["end"] == end.isoformat()
+    assert meta["start"] == result.start.isoformat()
+    assert meta["days"] == 30
+    assert meta["seed"] == 11
+    assert meta["synthetic"] is True
+    assert "generated_at" in meta

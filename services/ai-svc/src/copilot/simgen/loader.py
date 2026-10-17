@@ -1,7 +1,7 @@
-"""Write a SimResult to Postgres, one tenant per transaction, through row-level security."""
+"""Write a SimResult to Postgres in one transaction, tenant by tenant, through row-level security."""
 
 import json
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +31,8 @@ def _delete_tenant(conn: psycopg.Connection, tenant_id: str) -> None:
 def load(result: SimResult, settings: Settings) -> None:
     n = int((result.end - result.start).total_seconds() // 60)
     timestamps = [result.start + timedelta(minutes=i) for i in range(n)]
-    with psycopg.connect(settings.dsn("ops_loader")) as conn:
+    # One outer transaction: all tenants load or none do. Per-tenant blocks are savepoints.
+    with psycopg.connect(settings.dsn("ops_loader")) as conn, conn.transaction():
         for tenant in result.tenants:
             assets = [a for a in result.assets if a.tenant_id == tenant.id]
             with conn.transaction():
@@ -61,10 +62,11 @@ def load(result: SimResult, settings: Settings) -> None:
                     # COPY FROM is not allowed on RLS tables: stage in a temp table, then
                     # INSERT ... SELECT so the RLS WITH CHECK still applies to every row.
                     cur.execute(
-                        "CREATE TEMP TABLE readings_stage (tenant_id text, asset_id text,"
-                        " tag text, ts timestamptz, value double precision, quality smallint)"
-                        " ON COMMIT DROP"
+                        "CREATE TEMP TABLE IF NOT EXISTS readings_stage (tenant_id text,"
+                        " asset_id text, tag text, ts timestamptz, value double precision,"
+                        " quality smallint) ON COMMIT DROP"
                     )
+                    cur.execute("TRUNCATE readings_stage")
                     with cur.copy(
                         "COPY readings_stage (tenant_id, asset_id, tag, ts, value, quality)"
                         " FROM STDIN"
@@ -118,6 +120,22 @@ def tenant_counts(settings: Settings, tenant_ids: list[str]) -> dict[str, dict[s
 
 def write_ground_truth(result: SimResult, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fh:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
         for gt in result.ground_truth:
             fh.write(json.dumps(gt.to_json()) + "\n")
+    tmp.replace(path)
+
+
+def write_run_metadata(result: SimResult, path: Path) -> None:
+    """Record what the ground truth was generated against, so evals can pin as_of = end."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    meta = {
+        "start": result.start.isoformat(),
+        "end": result.end.isoformat(),
+        "days": round((result.end - result.start) / timedelta(days=1)),
+        "seed": result.seed,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "synthetic": True,
+    }
+    path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")

@@ -36,7 +36,7 @@ def simgen(
 ) -> None:
     """Generate synthetic telemetry/alarms, load them per tenant and write ground truth."""
     from copilot.simgen.generate import generate
-    from copilot.simgen.loader import load, tenant_counts, write_ground_truth
+    from copilot.simgen.loader import load, tenant_counts, write_ground_truth, write_run_metadata
 
     end_dt = datetime.fromisoformat(end) if end else datetime.now(UTC)
     if end_dt.tzinfo is None:
@@ -45,12 +45,13 @@ def simgen(
     result = generate(end_dt, days=days, seed=seed)
     typer.echo(f"generated {result.start.isoformat()} .. {result.end.isoformat()} "
                f"({len(result.alarms)} alarms, {len(result.ground_truth)} incidents)")
-    load(result, settings)
+    load(result, settings)  # all tenants or none; files are written only after it succeeds
     write_ground_truth(result, out)
+    write_run_metadata(result, out.with_name("simgen_run.json"))
     counts = tenant_counts(settings, [t.id for t in result.tenants])
     for tenant_id, c in counts.items():
         typer.echo(f"{tenant_id}: " + ", ".join(f"{k}={v}" for k, v in c.items()))
-    typer.echo(f"ground truth: {out}")
+    typer.echo(f"ground truth: {out} (run metadata: {out.with_name('simgen_run.json')})")
     if any(c["foreign"] for c in counts.values()):
         typer.echo("ERROR: rows from another tenant were visible", err=True)
         raise typer.Exit(1)

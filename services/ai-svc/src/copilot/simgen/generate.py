@@ -48,6 +48,7 @@ class SimResult:
     series: dict[tuple[str, str], AssetSeries]
     alarms: list[Alarm]
     ground_truth: list[GroundTruth]
+    seed: int
 
 
 def generate(end: datetime, days: int = 30, seed: int = 7) -> SimResult:
@@ -106,4 +107,4 @@ def generate(end: datetime, days: int = 30, seed: int = 7) -> SimResult:
             alarms=linked,
         ))
 
-    return SimResult(start, end, TENANTS, ASSETS, series, alarms, ground_truth)
+    return SimResult(start, end, TENANTS, ASSETS, series, alarms, ground_truth, seed)

@@ -28,6 +28,16 @@ Exit criteria
 
 **Goal:** the secure, read-only path to alarms and telemetry.
 
+Carry-over from the M0 review
+- Scope the tenant with `SELECT set_config('app.tenant_id', $1, true)` inside each transaction
+  (`SET LOCAL` cannot take a bind parameter); never format the token claim into SQL.
+- Reset `app.tenant_id` on pgxpool acquire/release so a session-level `SET` cannot leak.
+- Refuse to start if `current_user` is a superuser or has `BYPASSRLS` (guards against the owner DSN).
+- Wrap ServeMux default 404/405 so every error uses the `{"error": …}` JSON body.
+- Do not expose raw `ops.alarms.id` (global sequence reveals cross-tenant volume); use opaque ids.
+- Deferred minors to pick up: DSN via `psycopg.conninfo.make_conninfo`; CLI `BadParameter` for
+  bad `--end`/`--days`; advisory lock + checksum in the migration runner.
+
 Tasks
 - JWT verification middleware (iss, aud, exp, tenant claim); `copilot devtoken`.
 - Store layer with per-request transaction and `SET LOCAL app.tenant_id`.
@@ -43,6 +53,11 @@ Exit criteria
 ## M2 — Corpus, ingest & retrieval
 
 **Goal:** versioned documents searchable with three strategies, measured.
+
+Carry-over from the M0 review
+- kb tenancy is structural (migration 005): shared docs use `tenant_id = '_shared'`.
+- pgvector HNSW applies RLS/tenant filters after the index scan, so top-k can come back short:
+  use `SET hnsw.iterative_scan = relaxed_order` (or a larger `ef_search`) and test recall per tenant.
 
 Tasks
 - Author corpus: SOPs + troubleshooting guides for CP-200 pumps, cooling loop, compressor;
