@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Go
+services/data-svc/bin/
+
+# Env / secrets
+.env
+*.local
+
+# Generated data
+data/
+ground_truth.jsonl
+models/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
