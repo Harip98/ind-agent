@@ -55,7 +55,8 @@ func run(logger *slog.Logger) error {
 		Addr: addr,
 		Handler: api.NewRouter(api.Deps{
 			Store: st, Verifier: verifier, Logger: logger,
-			RatePerSecond: 10, Burst: 20, Now: time.Now,
+			// One investigation fetches ~14 resources; allow a few back to back per user.
+			RatePerSecond: 30, Burst: 60, Now: time.Now,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,

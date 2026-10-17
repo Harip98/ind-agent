@@ -79,3 +79,16 @@ def test_llm_down_is_503_but_template_works(sim):
     r = c.post("/investigate", json={**BODY, "mode": "llm"}, headers=_auth())
     assert r.status_code == 503 and r.json()["error"]["code"] == "llm_unavailable"
     assert c.post("/investigate", json=BODY, headers=_auth()).status_code == 200
+
+
+def test_rate_limited_and_rejected_and_unexpected_errors_keep_the_contract(sim):
+    from copilot.datasvc import RateLimited, Rejected
+
+    for exc, status, code in [(RateLimited("x"), 429, "rate_limited"), (Rejected("x"), 500, "internal"),
+                              (ZeroDivisionError("x"), 500, "internal")]:
+        def boom(p, t, exc=exc):
+            raise exc
+
+        r = _client(sim, datasvc=boom).post("/investigate", json=BODY, headers={**_auth(), "X-Trace-Id": "t-9"})
+        assert r.status_code == status and r.json()["error"]["code"] == code
+        assert r.headers["X-Trace-Id"] == "t-9"

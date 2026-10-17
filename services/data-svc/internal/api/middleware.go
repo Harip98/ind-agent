@@ -112,6 +112,7 @@ func withRateLimit(l *rateLimiter, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := claimsFrom(r)
 		if !l.allow(c.TenantID + ":" + c.Subject) {
+			w.Header().Set("Retry-After", "1")
 			writeError(w, errRateLimited)
 			return
 		}

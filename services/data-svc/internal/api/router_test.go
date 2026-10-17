@@ -196,6 +196,9 @@ func TestRateLimitPerToken(t *testing.T) {
 	if rec.Code != 429 || errorCode(t, rec) != "rate_limited" {
 		t.Fatalf("got %d %s", rec.Code, rec.Body.String())
 	}
+	if rec.Header().Get("Retry-After") != "1" {
+		t.Fatalf("Retry-After = %q", rec.Header().Get("Retry-After"))
+	}
 	if rec := do(h, http.MethodGet, "/v1/assets", token(t, "acme", "other-user")); rec.Code != 200 {
 		t.Fatalf("other user limited: %d", rec.Code)
 	}

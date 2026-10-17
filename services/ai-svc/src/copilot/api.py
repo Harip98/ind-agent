@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from copilot.auth import TokenError, verify_token
 from copilot.config import get_settings
-from copilot.datasvc import DataServiceClient, DataServiceError
+from copilot.datasvc import DataServiceClient, DataServiceError, RateLimited, Rejected
 from copilot.logjson import get_logger
 from copilot.pipeline import InvestigateRequest, LLMUnavailable, PipelineDeps, investigate
 
@@ -76,12 +76,21 @@ def create_app(deps_factory: Callable[[], PipelineDeps] | None = None) -> FastAP
         req = InvestigateRequest(body.question, body.as_of, body.mode, body.strategy)
         try:
             result = investigate(req, principal, deps(), trace)
+        except RateLimited as exc:
+            log.warning("rate limited", extra={"fields": {"trace_id": trace, "err": str(exc)}})
+            return _error(429, "rate_limited", "too many requests; retry shortly", trace)
+        except Rejected as exc:
+            log.error("data-svc rejected request", extra={"fields": {"trace_id": trace, "err": str(exc)}})
+            return _error(500, "internal", "internal error", trace)
         except DataServiceError as exc:
             log.warning("data unavailable", extra={"fields": {"trace_id": trace, "err": str(exc)}})
             return _error(503, "data_unavailable", "operational data service unavailable", trace)
         except LLMUnavailable as exc:
             log.warning("llm unavailable", extra={"fields": {"trace_id": trace, "err": str(exc)}})
             return _error(503, "llm_unavailable", "language model unavailable; retry with mode=template", trace)
+        except Exception as exc:  # keep the error contract and the trace id for anything unexpected
+            log.exception("unhandled error", extra={"fields": {"trace_id": trace, "err": repr(exc)}})
+            return _error(500, "internal", "internal error", trace)
         log.info("investigate", extra={"fields": {
             "trace_id": trace, "tenant": principal.tenant_id, "status": result["status"], "mode": body.mode,
             "timings_ms": result["timings_ms"], "llm": result["llm"],

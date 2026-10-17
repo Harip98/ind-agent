@@ -1,9 +1,12 @@
 """Typed client for data-svc. Always forwards the end user's token; never holds its own."""
 
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import httpx
+
+RETRY_DELAYS = (0.25, 0.5, 1.0)  # seconds; Retry-After overrides
 
 
 class DataServiceError(RuntimeError):
@@ -12,6 +15,14 @@ class DataServiceError(RuntimeError):
 
 class NotFound(DataServiceError):
     """Unknown asset or tag for the caller's tenant (indistinguishable from another tenant's)."""
+
+
+class RateLimited(DataServiceError):
+    """data-svc kept answering 429 after retries."""
+
+
+class Rejected(DataServiceError):
+    """data-svc rejected the request (4xx other than 404/429): a bug in the caller, not an outage."""
 
 
 @dataclass(frozen=True)
@@ -99,12 +110,25 @@ class DataServiceClient:
         )
 
     def _get(self, path: str, params: dict | None = None) -> dict:
-        try:
-            response = self._http.get(path, params=params)
-        except httpx.HTTPError as exc:
-            raise DataServiceError(f"data-svc unreachable: {exc}") from exc
+        for attempt in range(len(RETRY_DELAYS) + 1):
+            try:
+                response = self._http.get(path, params=params)
+            except httpx.HTTPError as exc:
+                raise DataServiceError(f"data-svc unreachable: {exc}") from exc
+            if response.status_code != 429:
+                break
+            if attempt == len(RETRY_DELAYS):
+                raise RateLimited(f"data-svc rate limit persisted for {path}")
+            retry_after = response.headers.get("Retry-After", "")
+            time.sleep(float(retry_after) if retry_after.isdigit() else RETRY_DELAYS[attempt])
         if response.status_code == 404:
             raise NotFound(path)
+        if 400 <= response.status_code < 500:
+            try:
+                code = response.json()["error"]["code"]
+            except (ValueError, KeyError, TypeError):
+                code = str(response.status_code)
+            raise Rejected(f"data-svc rejected {path}: {code}")
         if response.status_code != 200:
             raise DataServiceError(f"data-svc returned {response.status_code} for {path}")
         return response.json()

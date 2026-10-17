@@ -66,3 +66,30 @@ def test_404_is_not_found_and_5xx_or_network_is_error():
 
 def test_fmt_ts_is_utc_z():
     assert fmt_ts(datetime(2026, 10, 16, 9, 11, tzinfo=UTC)) == "2026-10-16T09:11:00Z"
+
+
+def test_429_is_retried_with_backoff(monkeypatch):
+    import copilot.datasvc as ds
+
+    sleeps = []
+    monkeypatch.setattr(ds.time, "sleep", sleeps.append)
+    responses = [httpx.Response(429, headers={"Retry-After": "1"}, json={}),
+                 httpx.Response(429, json={}),
+                 httpx.Response(200, json={"truncated": False, "alarms": []})]
+    alarms, _ = _client(lambda r: responses.pop(0)).alarms("P-12", T0, T0.replace(hour=5))
+    assert alarms == [] and len(sleeps) == 2 and sleeps[0] == 1.0
+
+
+def test_persistent_429_is_rate_limited_error(monkeypatch):
+    import copilot.datasvc as ds
+
+    monkeypatch.setattr(ds.time, "sleep", lambda s: None)
+    with pytest.raises(ds.RateLimited):
+        _client(lambda r: httpx.Response(429, json={})).alarms("P-12", T0, T0)
+
+
+def test_other_4xx_is_a_rejection_not_unavailable():
+    from copilot.datasvc import Rejected
+
+    with pytest.raises(Rejected, match="window_too_large"):
+        _client(lambda r: httpx.Response(400, json={"error": {"code": "window_too_large"}})).alarms("X", T0, T0)
