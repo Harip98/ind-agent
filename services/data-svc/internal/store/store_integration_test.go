@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	readerDSN = "host=localhost port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw"
-	loaderDSN = "host=localhost port=5433 dbname=indagent user=ops_loader password=ops_loader_dev_pw"
-	ownerDSN  = "host=localhost port=5433 dbname=indagent user=app_owner password=owner_dev_pw"
+	readerDSN = "host=127.0.0.1 port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw"
+	loaderDSN = "host=127.0.0.1 port=5433 dbname=indagent user=ops_loader password=ops_loader_dev_pw"
+	ownerDSN  = "host=127.0.0.1 port=5433 dbname=indagent user=app_owner password=owner_dev_pw"
 )
 
 var seedStart = time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

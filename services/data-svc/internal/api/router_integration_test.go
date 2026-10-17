@@ -18,7 +18,7 @@ func TestRouterCrossTenantAssetIs404(t *testing.T) {
 		t.Skip("set INDAGENT_INTEGRATION=1")
 	}
 	ctx := context.Background()
-	s, err := store.Open(ctx, "host=localhost port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw")
+	s, err := store.Open(ctx, "host=127.0.0.1 port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw")
 	if err != nil {
 		t.Fatal(err)
 	}

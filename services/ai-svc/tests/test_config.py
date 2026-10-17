@@ -16,7 +16,14 @@ def test_find_repo_root_raises_outside_repo(tmp_path: Path):
 
 def test_dsn_uses_role_specific_password():
     s = Settings(pg_host="db", pg_port=1234, pg_db="x", ops_reader_password="secret")
-    assert s.dsn("ops_reader") == "host=db port=1234 dbname=x user=ops_reader password=secret"
+    assert s.dsn("ops_reader") == (
+        "host=db port=1234 dbname=x user=ops_reader password=secret connect_timeout=5"
+    )
+
+
+def test_default_host_is_ipv4_loopback():
+    """Docker binds 127.0.0.1 only; 'localhost' tries ::1 first on Windows and can hang."""
+    assert Settings.model_fields["pg_host"].default == "127.0.0.1"
 
 
 def test_owner_password_maps_to_app_owner():

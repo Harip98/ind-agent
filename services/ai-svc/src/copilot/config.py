@@ -25,7 +25,7 @@ class Settings(BaseSettings):
         env_prefix="COPILOT_", env_file=REPO_ROOT / ".env", extra="ignore"
     )
 
-    pg_host: str = "localhost"
+    pg_host: str = "127.0.0.1"  # not "localhost": Docker binds IPv4 only
     pg_port: int = 5433
     pg_db: str = "indagent"
     owner_password: str = "owner_dev_pw"
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     def dsn(self, role: str) -> str:
         return (
             f"host={self.pg_host} port={self.pg_port} dbname={self.pg_db} "
-            f"user={role} password={self.password_for(role)}"
+            f"user={role} password={self.password_for(role)} connect_timeout=5"
         )
 
 

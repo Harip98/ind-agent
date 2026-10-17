@@ -16,7 +16,7 @@ import (
 	"indagent/data-svc/internal/store"
 )
 
-const devDSN = "host=localhost port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw"
+const devDSN = "host=127.0.0.1 port=5433 dbname=indagent user=ops_reader password=ops_reader_dev_pw"
 
 func getenv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
