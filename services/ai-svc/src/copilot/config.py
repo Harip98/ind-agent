@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from psycopg.conninfo import make_conninfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,11 @@ class Settings(BaseSettings):
     ollama_timeout_s: float = 60.0
     embed_model: str = "nomic-embed-text"
     reranker_model: str = "BAAI/bge-reranker-base"
+    llm_model: str = "qwen2.5:7b-instruct"
+    llm_timeout_s: float = 240.0
+    llm_num_ctx: int = 4096
+    data_svc_url: str = "http://127.0.0.1:8081"
+    retrieval_strategy: str = "hybrid"
 
     def password_for(self, role: str) -> str:
         if role not in ROLES:
@@ -46,9 +52,9 @@ class Settings(BaseSettings):
         return getattr(self, field)
 
     def dsn(self, role: str) -> str:
-        return (
-            f"host={self.pg_host} port={self.pg_port} dbname={self.pg_db} "
-            f"user={role} password={self.password_for(role)} connect_timeout=5"
+        return make_conninfo(
+            host=self.pg_host, port=self.pg_port, dbname=self.pg_db, user=role,
+            password=self.password_for(role), connect_timeout=5,
         )
 
 

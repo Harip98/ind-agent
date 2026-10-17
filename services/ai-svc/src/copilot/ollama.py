@@ -1,5 +1,7 @@
 """Minimal Ollama HTTP client. Everything model-related runs locally."""
 
+import json
+
 import httpx
 
 
@@ -25,3 +27,27 @@ class OllamaClient:
         if len(vectors) != len(texts):
             raise OllamaError(f"embedding count mismatch: {len(vectors)} != {len(texts)}")
         return vectors
+
+    def chat_json(
+        self, model: str, system: str, user: str, schema: dict,
+        num_ctx: int = 4096, num_predict: int = 512,
+    ) -> tuple[dict, dict]:
+        """Schema-constrained chat completion; returns (parsed JSON, usage)."""
+        body = {
+            "model": model, "stream": False, "format": schema, "keep_alive": "30m",
+            "options": {"temperature": 0, "num_ctx": num_ctx, "num_predict": num_predict},
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        }
+        try:
+            response = self._http.post("/api/chat", json=body)
+            response.raise_for_status()
+            data = response.json()
+            content = json.loads(data["message"]["content"])
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            raise OllamaError(f"chat failed: {exc}") from exc
+        usage = {
+            "prompt_tokens": data.get("prompt_eval_count", 0),
+            "completion_tokens": data.get("eval_count", 0),
+            "seconds": data.get("total_duration", 0) / 1e9,
+        }
+        return content, usage

@@ -21,3 +21,15 @@ def test_discover_rejects_badly_named_sql(tmp_path: Path):
 def test_repo_migrations_are_well_formed():
     versions = [v for v, _ in discover(MIGRATIONS_DIR)]
     assert versions == ["001_roles_schemas", "002_ops", "003_kb", "004_rls", "005_kb_structural_tenancy", "006_alarm_identity", "007_kb_embed_model", "008_kb_exact_knn", "009_kb_replaced_by"]
+
+
+def test_checksum_mismatch_detected(tmp_path):
+    import hashlib
+
+    from copilot.db.migrate import MigrationChecksumError, check_checksums
+
+    (tmp_path / "001_a.sql").write_bytes(b"select 1;")
+    check_checksums(tmp_path, {"001_a": hashlib.sha256(b"select 1;").hexdigest()})
+    check_checksums(tmp_path, {"001_a": None})
+    with pytest.raises(MigrationChecksumError, match="001_a"):
+        check_checksums(tmp_path, {"001_a": "deadbeef"})

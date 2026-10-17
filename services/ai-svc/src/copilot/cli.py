@@ -38,11 +38,18 @@ def simgen(
     from copilot.simgen.generate import generate
     from copilot.simgen.loader import load, tenant_counts, write_ground_truth, write_run_metadata
 
-    end_dt = datetime.fromisoformat(end) if end else datetime.now(UTC)
+    try:
+        end_dt = datetime.fromisoformat(end) if end else datetime.now(UTC)
+    except ValueError:
+        raise typer.BadParameter("must be ISO-8601, e.g. 2026-10-17T08:00+00:00", param_hint="--end")
     if end_dt.tzinfo is None:
-        raise typer.BadParameter("--end must include a timezone offset, e.g. 2026-10-17T08:00+00:00")
+        raise typer.BadParameter("must include a timezone offset, e.g. 2026-10-17T08:00+00:00",
+                                 param_hint="--end")
     settings = get_settings()
-    result = generate(end_dt, days=days, seed=seed)
+    try:
+        result = generate(end_dt, days=days, seed=seed)
+    except ValueError as exc:
+        raise typer.BadParameter(f"{exc} (increase --days)", param_hint="--days") from exc
     typer.echo(f"generated {result.start.isoformat()} .. {result.end.isoformat()} "
                f"({len(result.alarms)} alarms, {len(result.ground_truth)} incidents)")
     load(result, settings)  # all tenants or none; files are written only after it succeeds

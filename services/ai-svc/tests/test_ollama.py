@@ -36,3 +36,25 @@ def test_http_error_becomes_ollama_error():
 def test_count_mismatch_is_an_error():
     with pytest.raises(OllamaError, match="count"):
         _client(lambda r: httpx.Response(200, json={"embeddings": [[1.0]]})).embed("m", ["a", "b"])
+
+
+def test_chat_json_sends_schema_and_parses_content():
+    seen = {}
+
+    def handler(request):
+        seen["body"] = request.read()
+        return httpx.Response(200, json={
+            "message": {"content": '{"a": 1}'}, "prompt_eval_count": 10, "eval_count": 5,
+            "total_duration": 2_000_000_000,
+        })
+
+    data, usage = _client(handler).chat_json("m", "sys", "user", {"type": "object"})
+    assert data == {"a": 1}
+    assert usage == {"prompt_tokens": 10, "completion_tokens": 5, "seconds": 2.0}
+    assert b'"format"' in seen["body"] and b'"temperature":0' in seen["body"].replace(b" ", b"")
+
+
+def test_chat_json_bad_content_is_ollama_error():
+    with pytest.raises(OllamaError, match="chat"):
+        _client(lambda r: httpx.Response(200, json={"message": {"content": "not json"}})).chat_json(
+            "m", "s", "u", {})

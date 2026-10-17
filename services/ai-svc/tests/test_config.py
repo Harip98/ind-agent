@@ -16,9 +16,11 @@ def test_find_repo_root_raises_outside_repo(tmp_path: Path):
 
 def test_dsn_uses_role_specific_password():
     s = Settings(pg_host="db", pg_port=1234, pg_db="x", ops_reader_password="secret")
-    assert s.dsn("ops_reader") == (
-        "host=db port=1234 dbname=x user=ops_reader password=secret connect_timeout=5"
-    )
+    import psycopg
+
+    assert psycopg.conninfo.conninfo_to_dict(s.dsn("ops_reader")) == {
+        "host": "db", "port": "1234", "dbname": "x", "user": "ops_reader", "password": "secret",
+        "connect_timeout": "5"}
 
 
 def test_default_host_is_ipv4_loopback():
@@ -38,3 +40,11 @@ def test_unknown_role_rejected():
 
 def test_roles_are_the_five_documented_roles():
     assert ROLES == ("app_owner", "ops_reader", "ops_loader", "kb_reader", "kb_writer")
+
+
+def test_dsn_quotes_special_characters_in_password():
+    import psycopg
+
+    s = Settings(ops_reader_password="p w'=x")
+    params = psycopg.conninfo.conninfo_to_dict(s.dsn("ops_reader"))
+    assert params["password"] == "p w'=x"
