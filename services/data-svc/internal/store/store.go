@@ -75,9 +75,10 @@ type Window struct {
 	Points            []Point   `json:"points"`
 }
 
-// AlarmID is the opaque, tenant-local alarm identifier exposed by the API.
-func AlarmID(assetID, tag string, raisedAt time.Time) string {
-	return fmt.Sprintf("%s:%s:%s", assetID, tag, raisedAt.UTC().Format("20060102T1504Z"))
+// AlarmID is the opaque, tenant-local alarm identifier exposed by the API. It is unique because
+// (tenant_id, asset_id, tag, alarm_type, raised_at) is unique in ops.alarms (migration 006).
+func AlarmID(assetID, tag, alarmType string, raisedAt time.Time) string {
+	return fmt.Sprintf("%s:%s:%s:%s", assetID, tag, alarmType, raisedAt.UTC().Format("20060102T150405Z"))
 }
 
 // Store holds the connection pool.
@@ -203,7 +204,7 @@ func (s *Store) Alarms(ctx context.Context, tenantID, assetID string, from, to t
 			SELECT asset_id, tag, alarm_type, severity, raised_at, cleared_at, value, limit_value, message
 			FROM ops.alarms
 			WHERE tenant_id = $1 AND asset_id = $2 AND raised_at >= $3 AND raised_at < $4
-			ORDER BY raised_at, tag
+			ORDER BY raised_at, tag, alarm_type
 			LIMIT $5`, tenantID, assetID, from, to, limit)
 		if err != nil {
 			return err
@@ -215,7 +216,7 @@ func (s *Store) Alarms(ctx context.Context, tenantID, assetID string, from, to t
 				&a.ClearedAt, &a.Value, &a.LimitValue, &a.Message); err != nil {
 				return err
 			}
-			a.ID = AlarmID(a.AssetID, a.Tag, a.RaisedAt)
+			a.ID = AlarmID(a.AssetID, a.Tag, a.AlarmType, a.RaisedAt)
 			out = append(out, a)
 		}
 		return rows.Err()

@@ -120,7 +120,7 @@ func TestStoreAlarmsHaveOpaqueIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(alarms) != 1 || alarms[0].ID != "P-1:TT-1:20260101T0100Z" {
+	if len(alarms) != 1 || alarms[0].ID != "P-1:TT-1:high_temp:20260101T010000Z" {
 		t.Fatalf("alarms = %+v", alarms)
 	}
 }

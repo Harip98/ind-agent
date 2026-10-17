@@ -92,7 +92,7 @@ Rules:
 - Over-limit requests return `400 window_too_large` / `400 invalid_range`; they are not silently truncated.
 - Per-token rate limit (token bucket, in memory) → `429`.
 - Error body: `{"error": {"code": "...", "message": "..."}}` for every non-2xx, including unknown routes and wrong methods.
-- Alarm ids are opaque and tenant-local: `<asset>:<tag>:<YYYYMMDDTHHMMZ>`; the DB sequence is never exposed.
+- Alarm ids are opaque and tenant-local: `<asset>:<tag>:<alarm_type>:<YYYYMMDDTHHMMSSZ>` (unique via `ops.alarms` index `alarms_identity`); the DB sequence is never exposed. Alarms are ordered by `raised_at, tag, alarm_type`; truncation keeps the oldest 500.
 - Refuses to start if its DB role is superuser or `BYPASSRLS`; the pool resets `app.tenant_id` when a connection is released.
 - Every request opens a read-only transaction and runs `SELECT set_config('app.tenant_id', $1, true)` with the token tenant as a bind parameter (never formatted into SQL); queries also carry an explicit `tenant_id = $1` predicate.
 
