@@ -56,3 +56,16 @@ def test_ask_prints_a_failed_agent_run(monkeypatch):
                                       "--as-of", end.isoformat()])
     assert result.exit_code == 0, result.output
     assert "agent_failed" in result.output and "list_assets" in result.output
+
+
+def test_llm_notes_name_the_model_that_ran():
+    from copilot.cli import llm_notes
+
+    assert "qwen2.5:3b-instruct" in llm_notes("qwen2.5:3b-instruct", "hybrid")[0]
+    assert "7b" not in llm_notes("qwen2.5:3b-instruct", "hybrid")[0]
+
+
+def test_default_model_fits_the_4gb_gpu():
+    from copilot.config import Settings
+
+    assert Settings.model_fields["llm_model"].default == "qwen2.5:3b-instruct"

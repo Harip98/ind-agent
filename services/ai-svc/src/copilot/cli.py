@@ -270,10 +270,9 @@ EVAL_NOTES = [
     "'Procedure doc match' checks the recommended document against a per-cause list at document level; it is not a "
     "section-level or human judgement of citation quality.",
 ]
-LLM_NOTES = [
-    "Hardware: laptop RTX 3050 Ti 4 GB, Ryzen 7 4800H; LLM qwen2.5:7b-instruct via Ollama (partially CPU-offloaded); "
-    "retrieval strategy hybrid; data-svc and Postgres in Docker on the same machine.",
-]
+def llm_notes(model: str, strategy: str) -> list[str]:
+    return [f"Hardware: laptop RTX 3050 Ti 4 GB, Ryzen 7 4800H, 16 GB RAM; LLM {model} via Ollama (temperature 0); "
+            f"retrieval strategy {strategy}; data-svc and Postgres in Docker on the same machine."]
 
 
 def _sha_files(paths) -> str:
@@ -345,7 +344,7 @@ def eval_e2e(
         raise typer.BadParameter(str(exc)) from exc
     summary = summarize(rows, mode)
     title = f"End-to-end evaluation — {split} split, {mode} mode ({len(rows)}/{len(cases)} cases, {date.today()})"
-    notes = EVAL_NOTES + (LLM_NOTES if mode != "template" else [])
+    notes = EVAL_NOTES + (llm_notes(settings.llm_model, settings.retrieval_strategy) if mode != "template" else [])
     out.with_suffix(".md").write_text(render_e2e_report(summary, rows, title, notes, mode), encoding="utf-8")
     a = summary["all"]
     rate = lambda v: "-" if v is None else f"{v['k']}/{v['n']}"  # noqa: E731

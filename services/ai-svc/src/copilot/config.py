@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     ollama_timeout_s: float = 60.0
     embed_model: str = "nomic-embed-text"
     reranker_model: str = "BAAI/bge-reranker-base"
-    llm_model: str = "qwen2.5:7b-instruct"
+    llm_model: str = "qwen2.5:3b-instruct"  # fits the 4 GB GPU; the 7B spills into RAM
     llm_timeout_s: float = 240.0
     llm_num_ctx: int = 4096
     agent_num_ctx: int = 8192  # mode=agent: the tool-call history grows each turn
