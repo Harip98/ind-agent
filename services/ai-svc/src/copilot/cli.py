@@ -55,3 +55,17 @@ def simgen(
     if any(c["foreign"] for c in counts.values()):
         typer.echo("ERROR: rows from another tenant were visible", err=True)
         raise typer.Exit(1)
+
+
+@app.command()
+def devtoken(
+    tenant: str = typer.Option(..., help="Tenant id, e.g. acme."),
+    sub: str = typer.Option("demo-user", help="Subject (user id)."),
+    ttl_minutes: int = typer.Option(60, help="Lifetime in minutes (max 60)."),
+) -> None:
+    """Print a short-lived development JWT for one tenant."""
+    from datetime import timedelta
+
+    from copilot.auth import issue_token
+
+    typer.echo(issue_token(tenant, sub, get_settings().jwt_secret, ttl=timedelta(minutes=ttl_minutes)))

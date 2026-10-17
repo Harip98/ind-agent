@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     ops_loader_password: str = "ops_loader_dev_pw"
     kb_reader_password: str = "kb_reader_dev_pw"
     kb_writer_password: str = "kb_writer_dev_pw"
+    jwt_secret: str = "dev-only-secret-change-me-0123456789abcdef"
 
     def password_for(self, role: str) -> str:
         if role not in ROLES:
