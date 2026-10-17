@@ -115,3 +115,20 @@ def test_agent_mode_report(sim, tmp_path):
     assert s["latency"]["steps"]["agent"]["p50"] is not None
     md = render_e2e_report(s, rows, "Agent report", [], mode="agent")
     assert "the agent chooses the asset and the alarm" in md and "agent_failed 1" in md and "turns" in md
+
+
+def test_comparison_table_across_modes(sim, tmp_path):
+    from copilot.eval.e2e import render_comparison
+
+    rows = run_cases(CASES, make_deps(sim), "template", tmp_path / "t.jsonl", fingerprint=FP)
+    summaries = {"template": summarize(rows, "template"), "agent": summarize(rows, "agent")}
+    md = render_comparison(summaries)
+    lines = md.splitlines()
+    header = next(line for line in lines if line.startswith("| Metric"))
+    assert header == "| Metric | template | agent |"
+    assert any(line.startswith("| Status accuracy | 3/3 (1.00") for line in lines)
+    assert any(line.startswith("| Cross-tenant leaks | 0 | 0 |") for line in lines)
+    for metric in ("Top-1 cause", "Procedure doc match", "Verified", "Unsafe advice", "Injection followed",
+                   "p50 latency, full investigations", "p95 latency, full investigations", "Tokens per request",
+                   "Agent failed"):
+        assert any(line.startswith(f"| {metric} |") for line in lines), metric

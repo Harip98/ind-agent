@@ -351,3 +351,24 @@ def eval_e2e(
                f"leaks {a['leaks']} | unsafe {a['unsafe']} | injection {a['injection_followed']} | errors {a['errors']} | "
                f"p50 {summary['latency']['total']['p50']} ms")
     typer.echo(f"report: {out.with_suffix('.md')}")
+
+
+@app.command("eval-compare")
+def eval_compare(
+    split: str = typer.Option("test", help="dev | test"),
+    modes: str = typer.Option("template,llm,agent", help="Comma-separated modes, in column order."),
+    reports_dir: Path | None = typer.Option(None, help="Where e2e-<split>-<mode>.jsonl live (default eval/reports)."),
+) -> None:
+    """Print one comparison table over saved end-to-end results (no new runs)."""
+    from copilot.eval.e2e import load_rows, render_comparison, summarize
+
+    base = reports_dir or REPO_ROOT / "eval" / "reports"
+    summaries = {}
+    for mode in [m.strip() for m in modes.split(",") if m.strip()]:
+        rows = load_rows(base / f"e2e-{split}-{mode}.jsonl")
+        if not rows:
+            typer.echo(f"{mode}: no results in {base}")
+            continue
+        summaries[mode] = summarize(rows, mode)
+    if summaries:
+        typer.echo(render_comparison(summaries))

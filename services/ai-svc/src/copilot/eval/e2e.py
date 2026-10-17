@@ -28,7 +28,7 @@ def _anonymous(case: EvalCase) -> Principal:
     return Principal(case.tenant, "eval", ("engineer",), "")
 
 
-def _load_rows(out_path: Path) -> list[dict]:
+def load_rows(out_path: Path) -> list[dict]:
     if not out_path.exists():
         return []
     rows = []
@@ -48,7 +48,7 @@ def run_cases(cases: list[EvalCase], deps: PipelineDeps, mode: str, out_path: Pa
     """Run every case not already in `out_path` (JSONL, appended per case) and return all rows in case order.
     Refuses to resume when `fingerprint` differs from the one stored next to the results."""
     meta_path = out_path.with_suffix(".meta.json")
-    rows = _load_rows(out_path)
+    rows = load_rows(out_path)
     if rows and fingerprint is not None and meta_path.exists():
         stored = json.loads(meta_path.read_text(encoding="utf-8"))
         changed = sorted(k for k in set(stored) | set(fingerprint) if stored.get(k) != fingerprint.get(k))
@@ -240,3 +240,34 @@ def render_e2e_report(summary: dict, rows: list[dict], title: str, notes: list[s
                          f"{', '.join(r['codes']) or '–'} | {', '.join(r['rec_docs']) or '–'} | {note} |")
     lines += ["", "## Method & limitations", ""] + [f"- {n}" for n in notes]
     return "\n".join(lines) + "\n"
+
+
+def render_comparison(summaries: dict[str, dict]) -> str:
+    """One table, one column per mode, for summaries of the same split."""
+    modes = list(summaries)
+
+    def row(label: str, fn) -> str:
+        return f"| {label} | " + " | ".join(str(fn(summaries[m])) for m in modes) + " |"
+
+    def ms(v: int | None) -> str:
+        return "–" if v is None else f"{v / 1000:.1f} s" if v >= 1000 else f"{v} ms"
+
+    return "\n".join([
+        "| Metric | " + " | ".join(modes) + " |",
+        "|---|" + "---|" * len(modes),
+        row("Status accuracy", lambda s: _fmt(s["all"]["status_acc"])),
+        row("Top-1 cause", lambda s: _fmt(s["all"]["top1"])),
+        row("Procedure doc match", lambda s: _fmt(s["all"]["procedure"])),
+        row("Stale pass", lambda s: _fmt(s["all"]["stale_pass"])),
+        row("Verified", lambda s: _fmt(s["all"]["verified"])),
+        row("Degraded", lambda s: s["all"]["degraded"]),
+        row("Agent failed", lambda s: (s.get("agent") or {}).get("agent_failed", "–")),
+        row("Cross-tenant leaks", lambda s: s["all"]["leaks"]),
+        row("Unsafe advice", lambda s: s["all"]["unsafe"]),
+        row("Injection followed", lambda s: s["all"]["injection_followed"]),
+        row("Errors", lambda s: s["all"]["errors"]),
+        row("p50 latency, full investigations", lambda s: ms(s["latency"]["full"]["p50"])),
+        row("p95 latency, full investigations", lambda s: ms(s["latency"]["full"]["p95"])),
+        row("Tokens per request", lambda s: s["cost"]["tokens_mean"] or "–"),
+        row("LLM seconds per request", lambda s: s["cost"]["llm_seconds_mean"] or "–"),
+    ]) + "\n"
