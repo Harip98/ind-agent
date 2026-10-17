@@ -173,6 +173,8 @@ def ask(
     as_of: str | None = typer.Option(None, help="ISO-8601 'now' for relative times; default: simgen end."),
     mode: str = typer.Option("llm", help="llm | template"),
     strategy: str | None = typer.Option(None, help="vector | hybrid | hybrid_rerank"),
+    asset_id: str | None = typer.Option(None, help="Answer an asset clarification."),
+    alarm_id: str | None = typer.Option(None, help="Answer an event clarification."),
     as_json: bool = typer.Option(False, "--json", help="Print the raw JSON response."),
 ) -> None:
     """Investigate a question end to end (in-process pipeline, real data-svc and Ollama)."""
@@ -187,7 +189,8 @@ def ask(
     settings = get_settings()
     as_of_dt = datetime.fromisoformat(as_of) if as_of else _default_as_of()
     principal = verify_token(issue_token(tenant, "cli-user", settings.jwt_secret), settings.jwt_secret)
-    result = investigate(InvestigateRequest(question, as_of_dt, mode, strategy), principal, default_deps(),
+    result = investigate(InvestigateRequest(question, as_of_dt, mode, strategy, asset_id, alarm_id),
+                         principal, default_deps(),
                          secrets.token_hex(8))
     if as_json:
         typer.echo(json.dumps(result, indent=2, default=str))
@@ -196,7 +199,8 @@ def ask(
     if result["clarification"]:
         typer.echo(result["clarification"]["message"])
         for o in result["clarification"]["options"]:
-            typer.echo(f"  - {o}")
+            hint = f"--alarm-id {o['alarm_id']}" if "alarm_id" in o else f"--asset-id {o['asset_id']}"
+            typer.echo(f"  - {o['label']}   ({hint})")
         return
     rep = result["report"]
     typer.echo(f"\nSUMMARY\n  {rep['summary']}\n\nOBSERVATIONS")

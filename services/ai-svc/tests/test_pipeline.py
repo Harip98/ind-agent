@@ -98,7 +98,8 @@ def test_llm_mode_verified_answer(sim):
 
 
 def test_verifier_failure_twice_degrades_to_template(sim):
-    bad = _good_llm_answer(summary="Temperature reached 123.4 degC.")
+    bad = _good_llm_answer()
+    bad["explanations"][0]["text"] = "Temperature reached 123.4 degC."
     out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=FakeLLM([bad, bad])), "t3")
     assert out["status"] == "degraded" and out["llm"]["attempts"] == 2
     assert out["llm"]["verifier_errors"]
@@ -106,7 +107,8 @@ def test_verifier_failure_twice_degrades_to_template(sim):
 
 
 def test_retry_succeeds_after_one_rejection(sim):
-    bad = _good_llm_answer(summary="Temperature reached 123.4 degC.")
+    bad = _good_llm_answer()
+    bad["explanations"][0]["text"] = "Temperature reached 123.4 degC."
     llm = FakeLLM([bad, _good_llm_answer()])
     out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=llm), "t4")
     assert out["status"] == "ok" and out["llm"]["attempts"] == 2
@@ -150,3 +152,45 @@ def test_retrieval_uses_principal_tenant_and_model(sim):
     r = FakeRetriever()
     investigate(InvestigateRequest(Q, as_of=END, mode="template"), _p(), make_deps(sim, retriever=r), "t10")
     assert r.calls[0][0] == "acme" and r.calls[0][2] == "CP-200" and r.calls[0][3] == "hybrid"
+
+
+def test_llm_explanations_are_put_in_candidate_order_with_rule_confidence(sim):
+    answer = _good_llm_answer()
+    answer["explanations"][0]["confidence"] = "low"
+    out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=FakeLLM([answer])), "t12")
+    top = out["report"]["possible_explanations"][0]
+    assert top["cause_code"] == "COOLING_RESTRICTION" and top["confidence"] == "high"
+    assert out["report"]["summary"].startswith("TT-10")  # deterministic summary from the evidence
+
+
+def test_timings_separate_generation_and_verification(sim):
+    out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=FakeLLM([_good_llm_answer()])),
+                      "t13")
+    assert {"llm", "verify", "report"} <= set(out["timings_ms"])
+
+
+def test_event_clarification_options_can_be_answered_with_alarm_id(sim):
+    q = "temperature alarm on Pump 12 in the last 14 days"
+    out = investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim), "t14")
+    options = out["clarification"]["options"]
+    assert all(o["alarm_id"].startswith("P-12:") and o["label"] for o in options)
+    pick = options[-1]["alarm_id"]
+    out2 = investigate(InvestigateRequest(q, as_of=END, mode="template", alarm_id=pick), _p(), make_deps(sim), "t15")
+    assert out2["status"] == "ok" and out2["query"]["alarm_id"] == pick
+
+
+def test_asset_clarification_options_can_be_answered_with_asset_id(sim):
+    q = "the pump temperature alarm yesterday"
+    out = investigate(InvestigateRequest(q, as_of=END, mode="template"), _p(), make_deps(sim), "t16")
+    assert out["status"] == "needs_clarification"
+    assert {o["asset_id"] for o in out["clarification"]["options"]} == {"P-10", "P-11", "P-12"}
+    out2 = investigate(InvestigateRequest(q, as_of=END, mode="template", asset_id="P-12"), _p(), make_deps(sim), "t17")
+    assert out2["status"] == "ok" and out2["query"]["asset_id"] == "P-12"
+
+
+def test_foreign_ids_in_request_behave_like_unknown(sim):
+    foreign_alarm = "P-12:TT-101:high_temp:20261016T034100Z"
+    for req in (InvestigateRequest(Q, as_of=END, mode="template", asset_id="P-12"),
+                InvestigateRequest(Q, as_of=END, mode="template", alarm_id=foreign_alarm)):
+        out = investigate(req, _p("globex"), make_deps(sim), "t18")
+        assert out["status"] == "needs_clarification" and "P-12" not in str(out)

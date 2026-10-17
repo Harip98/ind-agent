@@ -17,6 +17,7 @@ class CauseSignature:
     support: tuple[str, ...]
     exclude: tuple[str, ...]
     query: str
+    procedures: tuple[str, ...] = ()  # "DOC" or "DOC#section" patterns, preferred first
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,7 @@ class Candidate:
     score: float
     refs: tuple[str, ...]
     query: str
+    procedures: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -41,7 +43,8 @@ class SignatureSet:
 
 def _sig(code: str, d: dict) -> CauseSignature:
     return CauseSignature(code, d["label"], d["description"], tuple(d.get("require", ())),
-                          tuple(d.get("support", ())), tuple(d.get("exclude", ())), d["query"])
+                          tuple(d.get("support", ())), tuple(d.get("exclude", ())), d["query"],
+                          tuple(d.get("procedures", ())))
 
 
 def load_signatures(path: Path = SIGNATURES_PATH) -> SignatureSet:
@@ -68,6 +71,6 @@ def match(sigs: SignatureSet, model: str, features: dict[str, bool],
                 if r not in refs:
                     refs.append(r)
         out.append((score, order, Candidate(sig.code, sig.label, sig.description, round(score, 2),
-                                             tuple(refs), sig.query)))
+                                             tuple(refs), sig.query, sig.procedures)))
     out.sort(key=lambda x: (-x[0], x[1]))
     return [c for _, _, c in out]

@@ -25,6 +25,8 @@ class InvestigateBody(BaseModel):
     as_of: datetime | None = None
     mode: Literal["llm", "template"] = "llm"
     strategy: Literal["vector", "hybrid", "hybrid_rerank"] | None = None
+    asset_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,32}$")
+    alarm_id: str | None = Field(default=None, max_length=140)
 
 
 def default_deps() -> PipelineDeps:
@@ -73,7 +75,7 @@ def create_app(deps_factory: Callable[[], PipelineDeps] | None = None) -> FastAP
         except TokenError as exc:
             log.info("unauthorized", extra={"fields": {"trace_id": trace, "reason": str(exc)}})
             return _error(401, "unauthorized", "missing or invalid token", trace)
-        req = InvestigateRequest(body.question, body.as_of, body.mode, body.strategy)
+        req = InvestigateRequest(body.question, body.as_of, body.mode, body.strategy, body.asset_id, body.alarm_id)
         try:
             result = investigate(req, principal, deps(), trace)
         except RateLimited as exc:

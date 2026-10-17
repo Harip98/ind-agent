@@ -74,7 +74,7 @@ def test_good_report_passes(ev):
     (lambda r: r["explanations"][0].update(refs=["D1"]), "must cite an observation"),
     (lambda r: r["explanations"][0].update(cause_code="SABOTAGE"), "not a candidate"),
     (lambda r: r["recommendation"].update(refs=["O1"]), "must cite a procedure"),
-    (lambda r: r.update(summary="Temperature reached 97.3 degC."), "97.3"),
+    (lambda r: r["explanations"][0].update(text="Temperature reached 97.3 degC."), "97.3"),
     (lambda r: r["recommendation"].update(refs=["D3"]), "superseded"),
 ])
 def test_verifier_catches_defects(ev, mutate, error):
@@ -104,3 +104,73 @@ def test_template_without_current_docs_says_so(ev):
     ev2 = Evidence(ev.question, ASSET, ALARM, OBS, CANDS, build_docs([HITS[2]]), ev.timezone)
     r = template_report(ev2)
     assert r["recommendation"]["refs"] == [] and "no current procedure" in r["recommendation"]["text"].lower()
+
+
+from copilot.report import unsafe_advice  # noqa: E402
+
+
+@pytest.mark.parametrize("text", [
+    "Set the alarm limit to 95 degC.", "Jumper out the high temperature switch.",
+    "Ignore the trip and keep the pump running.", "Acknowledge and silence the alarm.",
+    "Reset the trip and restart the pump immediately.", "Put the interlock in bypass mode.",
+    "Disable the bearing temperature trip.", "Raise the trip setpoint to 95 degC.",
+])
+def test_unsafe_phrasings_detected(text):
+    assert unsafe_advice(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Do not raise the trip setpoint.", "Never bypass the high-temperature trip.",
+    "Increase cooling water flow until it returns to setpoint.", "Restore cooling water flow per the procedure.",
+    "Never disable the trip; restore cooling water instead.",
+])
+def test_safe_phrasings_allowed(text):
+    assert not unsafe_advice(text)
+
+
+def test_unsupported_claim_rejected(ev):
+    r = _good()
+    r["explanations"][0]["text"] = "The root cause is operator sabotage."
+    assert any("not supported" in e for e in verify(r, ev))
+
+
+def test_advice_from_superseded_procedure_rejected(ev):
+    r = _good()
+    r["recommendation"]["text"] = "Top up grease at every alarm and monitor."
+    assert any("superseded" in e for e in verify(r, ev))
+
+
+def test_explanations_must_include_top_candidate_once(ev):
+    r = _good()
+    r["explanations"] = []
+    assert any("top candidate" in e for e in verify(r, ev))
+    r = _good()
+    r["explanations"] = r["explanations"] * 2
+    assert any("duplicate" in e for e in verify(r, ev))
+
+
+def test_numbers_must_come_from_the_cited_evidence(ev):
+    r = _good()
+    r["explanations"][0]["text"] = "Bearing temperature reached 85.1 degC."  # 85.1 is in O1, cites only O2
+    assert any("85.1" in e for e in verify(r, ev))
+    r = _good()
+    r["explanations"][0]["text"] = "Temperature rose 12% above baseline."  # 12 only in 'Pump 12'
+    assert any("12" in e for e in verify(r, ev))
+
+
+def test_recommendation_must_cite_the_top_cause_procedure():
+    cand = [Candidate("COOLING_RESTRICTION", "Cooling water restriction", "d", 1.0, ("O1", "O2"), "q",
+                      ("SOP-PUMP-07#5.1",))]
+    hits = [HITS[1], HITS[0]]  # bulletin first, procedure second
+    ev2 = Evidence("q", ASSET, ALARM, OBS, cand, build_docs(hits), "Asia/Kolkata")
+    r = _good()
+    r["recommendation"] = {"text": "Follow the vendor bulletin.", "refs": ["D1"]}
+    assert any("procedure for COOLING_RESTRICTION" in e for e in verify(r, ev2))
+    assert template_report(ev2)["recommendation"]["refs"] == ["D2"]
+
+
+def test_schema_allows_no_explanations_without_candidates():
+    ev2 = Evidence("q", ASSET, ALARM, OBS, [], build_docs(HITS[:1]), "Asia/Kolkata")
+    assert report_schema(ev2)["properties"]["explanations"]["maxItems"] == 0
+    r = {"explanations": [], "recommendation": {"text": "Restore cooling water flow.", "refs": ["D1"]}}
+    assert verify(r, ev2) == []

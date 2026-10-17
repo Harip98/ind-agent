@@ -1,5 +1,6 @@
 """Investigation orchestration: intent -> alarms -> windows -> analysis -> causes -> docs -> report."""
 
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -11,12 +12,19 @@ from copilot.auth import Principal
 from copilot.causes import SignatureSet, match
 from copilot.config import Settings
 from copilot.datasvc import AlarmInfo
-from copilot.intent import alarm_types, resolve_asset, resolve_time
+from copilot.intent import AssetMatch, TimeRange, alarm_types, resolve_asset, resolve_time
 from copilot.llm import LLM
 from copilot.ollama import OllamaError
-from copilot.report import SYSTEM_PROMPT, Evidence, build_docs, render_prompt, report_schema, template_report, verify
+from copilot.report import (
+    SYSTEM_PROMPT, Evidence, build_docs, confidence, render_prompt, report_schema, summary_text, template_report,
+    verify,
+)
+from copilot.retrieval import Hit
+
+MAX_DOCS = 6
 
 EVENT_GAP = timedelta(hours=2)
+_ALARM_ID = re.compile(r"^([A-Za-z0-9_-]{1,32}):([A-Za-z0-9_-]{1,32}):([a-z_]{1,32}):(\d{8}T\d{6}Z)$")
 
 
 class LLMUnavailable(RuntimeError):
@@ -29,6 +37,8 @@ class InvestigateRequest:
     as_of: datetime | None = None
     mode: str = "llm"  # llm | template
     strategy: str | None = None
+    asset_id: str | None = None  # answer to an asset clarification
+    alarm_id: str | None = None  # answer to an event clarification (id from data-svc)
 
 
 @dataclass
@@ -77,20 +87,32 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
                  "citations": [], "clarification": None, "llm": None, "timings_ms": timings}
     ds = deps.datasvc(principal, trace_id)
     tenant, assets = ds.assets()
-    asset_match, via = resolve_asset(req.question, assets, deps.llm if req.mode == "llm" else None)
-    rng = resolve_time(req.question, as_of, tenant.timezone)
-    types = alarm_types(req.question)
+    by_id = {a.id: a for a in assets}
+    picked = _ALARM_ID.match(req.alarm_id) if req.alarm_id else None
+    if req.alarm_id:
+        # an explicit alarm: its asset and time come from the id; unknown/foreign ids look the same
+        asset_match, via = AssetMatch(by_id.get(picked.group(1)) if picked else None), "request"
+        when = datetime.strptime(picked.group(4), "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC) if picked else as_of
+        rng = TimeRange(when - timedelta(minutes=1), when + timedelta(minutes=1), "selected alarm", False)
+        types: tuple[str, ...] = ()
+    else:
+        if req.asset_id:
+            asset_match, via = AssetMatch(by_id.get(req.asset_id)), "request"
+        else:
+            asset_match, via = resolve_asset(req.question, assets, deps.llm if req.mode == "llm" else None)
+        rng = resolve_time(req.question, as_of, tenant.timezone)
+        types = alarm_types(req.question)
     assumptions = [f"No usable time given; searched the {rng.label}."] if rng.assumed else []
     if via == "llm":
         assumptions.append("Asset identified by the language model from the question.")
     lap("intent")
     if asset_match.asset is None:
         out["status"] = "needs_clarification"
-        options = [f"{a.id} ({a.name})" for a in asset_match.options]
+        listed = asset_match.options or tuple(assets)
         out["clarification"] = {
-            "message": "Which asset do you mean?" if options else
+            "message": "Which asset do you mean?" if asset_match.options else
                        "I could not find that asset. Name one of your assets (for example its id).",
-            "options": options or [f"{a.id} ({a.name})" for a in assets]}
+            "options": [{"label": f"{a.id} ({a.name})", "asset_id": a.id} for a in listed]}
         out["query"] = {"time_label": rng.label, "assumptions": assumptions}
         return out
 
@@ -100,7 +122,8 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
                     "alarm_types": list(types), "assumptions": assumptions}
     alarms, _ = ds.alarms(asset.id, rng.start, rng.end)
     out["evidence"]["alarms"] = [_alarm_dict(a) for a in alarms]
-    matching = [a for a in alarms if not types or a.alarm_type in types]
+    matching = ([a for a in alarms if a.id == req.alarm_id] if req.alarm_id
+                else [a for a in alarms if not types or a.alarm_type in types])
     events = _events(matching)
     if not events:
         lap("data")
@@ -118,8 +141,8 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
         out["status"] = "needs_clarification"
         out["clarification"] = {
             "message": f"{len(events)} separate alarm events match. Which one should I investigate?",
-            "options": [f"{e[0].tag} {e[0].alarm_type} at {_local(e[0].raised_at, tenant.timezone)}"
-                        for e in events]}
+            "options": [{"label": f"{e[0].tag} {e[0].alarm_type} at {_local(e[0].raised_at, tenant.timezone)}",
+                         "alarm_id": e[0].id} for e in events]}
         return out
     alarm = events[0][0]
     out["query"].update(alarm_id=alarm.id, alarm_type=alarm.alarm_type, tag=alarm.tag)
@@ -140,10 +163,18 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
     lap("analyze")
 
     sensor = asset.sensor(alarm.tag)
+    strategy = req.strategy or deps.settings.retrieval_strategy
     query = " ".join([sensor.description, alarm.alarm_type.replace("_", " ")] + [c.query for c in candidates[:2]])
-    hits = deps.retriever.search(principal.tenant_id, query, asset.model, k=5,
-                                 strategy=req.strategy or deps.settings.retrieval_strategy)
-    docs = build_docs(hits)
+    general = deps.retriever.search(principal.tenant_id, query, asset.model, k=5, strategy=strategy)
+    targeted: list[Hit] = []
+    if candidates:  # make sure the procedure for the top cause is in front of the writer
+        targeted = deps.retriever.search(principal.tenant_id, candidates[0].query, asset.model, k=3,
+                                         strategy=strategy)
+    hits: list[Hit] = []
+    for h in targeted + general:
+        if h.section_id not in {x.section_id for x in hits}:
+            hits.append(h)
+    docs = build_docs(hits[:MAX_DOCS])
     out["citations"] = [{"ref": d.id, "doc_id": d.hit.doc_id, "version": d.hit.version,
                          "section": d.hit.section_no, "title": d.hit.title, "heading": d.hit.heading,
                          "stale": d.hit.stale or not d.hit.is_current, "content": d.hit.content} for d in docs]
@@ -157,26 +188,38 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
         stats = {"model": deps.llm.name, "attempts": 0, "prompt_tokens": 0, "completion_tokens": 0,
                  "seconds": 0.0, "verifier_errors": []}
         errors: list[str] | None = None
+        gen_s = ver_s = 0.0
         for _ in range(2):
             stats["attempts"] += 1
+            t0 = time.perf_counter()
             try:
                 result = deps.llm.generate_json(SYSTEM_PROMPT, render_prompt(ev, errors), report_schema(ev))
             except OllamaError as exc:
                 raise LLMUnavailable(str(exc)) from exc
+            t1 = time.perf_counter()
             stats["prompt_tokens"] += result.prompt_tokens
             stats["completion_tokens"] += result.completion_tokens
             stats["seconds"] = round(stats["seconds"] + result.seconds, 2)
             errors = verify(result.data, ev)
+            gen_s, ver_s = gen_s + (t1 - t0), ver_s + (time.perf_counter() - t1)
             if not errors:
                 report = result.data
                 break
             stats["verifier_errors"] += errors
         out["llm"] = stats
-        lap("verify")
+        timings["llm"], timings["verify"] = int(gen_s * 1000), int(ver_s * 1000)
+        clock = time.perf_counter()
     if report is None:
         report = template_report(ev)
         if req.mode == "llm":
             out["status"] = "degraded"
+    # Ranking and confidence come from the signatures, never from the LLM: keep its texts, in candidate order.
+    texts = {e["cause_code"]: e for e in report["explanations"]}
+    explanations = [
+        {"cause_code": c.code, "text": texts[c.code]["text"], "refs": texts[c.code]["refs"],
+         "confidence": confidence(c, rank)}
+        for rank, c in enumerate(candidates) if c.code in texts
+    ]
     lap("report")
 
     labels = {c.code: (c.label, c.score) for c in candidates}
@@ -188,11 +231,11 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
     if any(d.hit.stale for d in docs):
         insufficient.append("Some matching procedures are SUPERSEDED versions; confirm the current procedure.")
     out["report"] = {
-        "summary": report["summary"],
+        "summary": summary_text(ev),
         "observations": [{"id": o.id, "text": o.text} for o in analysis.observations],
         "possible_explanations": [
-            {**e, "label": labels.get(e["cause_code"], (e["cause_code"], 0.0))[0],
-             "score": labels.get(e["cause_code"], ("", 0.0))[1]} for e in report["explanations"]],
+            {**e, "label": labels[e["cause_code"]][0], "score": labels[e["cause_code"]][1]}
+            for e in explanations],
         "recommendation": report["recommendation"],
         "insufficient_evidence": insufficient,
     }
