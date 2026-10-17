@@ -42,10 +42,11 @@ def apply_migrations(conn: psycopg.Connection, migrations_dir: Path = MIGRATIONS
     return newly_applied
 
 
-def set_role_passwords(conn: psycopg.Connection, settings: Settings) -> None:
+def harden_service_roles(conn: psycopg.Connection, settings: Settings) -> None:
+    """Set service role passwords and re-assert they can never bypass row-level security."""
     for role in _SERVICE_ROLES:
         conn.execute(
-            sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+            sql.SQL("ALTER ROLE {} NOSUPERUSER NOBYPASSRLS PASSWORD {}").format(
                 sql.Identifier(role), sql.Literal(settings.password_for(role))
             )
         )

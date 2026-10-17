@@ -1,7 +1,7 @@
 import psycopg
 import pytest
 
-from copilot.db.migrate import apply_migrations
+from copilot.db.migrate import apply_migrations, harden_service_roles
 
 from .conftest import as_tenant
 
@@ -10,8 +10,20 @@ pytestmark = pytest.mark.integration
 TENANTS = ("itest_a", "itest_b")
 
 
+SERVICE_ROLES = ("ops_reader", "ops_loader", "kb_reader", "kb_writer")
+# ops table -> its tenant column
+OPS_TABLES = {
+    "tenants": "id",
+    "assets": "tenant_id",
+    "sensors": "tenant_id",
+    "alarms": "tenant_id",
+    "sensor_readings": "tenant_id",
+}
+
+
 def _cleanup(conn: psycopg.Connection, tenant_id: str) -> None:
-    conn.execute("DELETE FROM ops.assets WHERE tenant_id = %s", (tenant_id,))
+    for table in ("sensor_readings", "alarms", "sensors", "assets"):
+        conn.execute(f"DELETE FROM ops.{table} WHERE tenant_id = %s", (tenant_id,))
     conn.execute("DELETE FROM ops.tenants WHERE id = %s", (tenant_id,))
 
 
@@ -28,6 +40,22 @@ def seeded(settings):
                 conn.execute(
                     "INSERT INTO ops.assets (tenant_id, id, name, asset_model, site)"
                     " VALUES (%s, 'P-1', 'Pump 1', 'CP-200', 'Test')",
+                    (tid,),
+                )
+                conn.execute(
+                    "INSERT INTO ops.sensors (tenant_id, asset_id, tag, kind, description, unit)"
+                    " VALUES (%s, 'P-1', 'TT-1', 'temperature', 'Bearing temp', 'degC')",
+                    (tid,),
+                )
+                conn.execute(
+                    "INSERT INTO ops.sensor_readings (tenant_id, asset_id, tag, ts, value)"
+                    " VALUES (%s, 'P-1', 'TT-1', '2026-10-01T00:00Z', 60)",
+                    (tid,),
+                )
+                conn.execute(
+                    "INSERT INTO ops.alarms (tenant_id, asset_id, tag, alarm_type, severity,"
+                    " raised_at, message) VALUES (%s, 'P-1', 'TT-1', 'high_temp', 'medium',"
+                    " '2026-10-01T00:00Z', 'test alarm')",
                     (tid,),
                 )
     _kb_cleanup(settings)
@@ -135,6 +163,56 @@ def test_kb_same_document_id_allowed_in_two_tenants(settings, seeded):
         as_tenant(conn, "itest_b")
         rows = conn.execute("SELECT tenant_id FROM kb.documents WHERE id = 'ITEST-LOCAL'").fetchall()
     assert rows == [("itest_b",)]
+
+
+@pytest.mark.parametrize("table", sorted(OPS_TABLES))
+def test_reader_sees_only_own_tenant_in_every_ops_table(settings, seeded, table):
+    column = OPS_TABLES[table]
+    with psycopg.connect(settings.dsn("ops_reader")) as conn:
+        as_tenant(conn, "itest_a")
+        own, foreign = conn.execute(
+            f"SELECT count(*) FILTER (WHERE {column} = 'itest_a'),"
+            f" count(*) FILTER (WHERE {column} <> 'itest_a') FROM ops.{table}"
+        ).fetchone()
+    assert own >= 1
+    assert foreign == 0
+
+
+def test_every_tenant_table_has_forced_rls_and_a_policy(settings):
+    with psycopg.connect(settings.dsn("app_owner")) as conn:
+        rows = conn.execute(
+            "SELECT n.nspname || '.' || c.relname, c.relrowsecurity, c.relforcerowsecurity,"
+            " (SELECT count(*) FROM pg_policies p"
+            "   WHERE p.schemaname = n.nspname AND p.tablename = c.relname)"
+            " FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
+            " WHERE n.nspname IN ('ops', 'kb') AND c.relkind = 'r'"
+        ).fetchall()
+    assert len(rows) == 9
+    unprotected = [name for name, rls, forced, policies in rows if not (rls and forced and policies)]
+    assert unprotected == []
+
+
+def test_service_roles_cannot_bypass_rls(settings):
+    with psycopg.connect(settings.dsn("app_owner")) as conn:
+        rows = conn.execute(
+            "SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = ANY(%s)",
+            (list(SERVICE_ROLES),),
+        ).fetchall()
+    assert sorted(r[0] for r in rows) == sorted(SERVICE_ROLES)
+    assert [r[0] for r in rows if r[1] or r[2]] == []
+
+
+def test_migrate_resets_service_role_attributes(settings):
+    with psycopg.connect(settings.dsn("app_owner"), autocommit=True) as conn:
+        conn.execute("ALTER ROLE ops_reader BYPASSRLS")
+        try:
+            harden_service_roles(conn, settings)
+            bypass = conn.execute(
+                "SELECT rolbypassrls FROM pg_roles WHERE rolname = 'ops_reader'"
+            ).fetchone()[0]
+        finally:
+            conn.execute("ALTER ROLE ops_reader NOBYPASSRLS")
+    assert bypass is False
 
 
 def test_migrations_are_idempotent(settings):

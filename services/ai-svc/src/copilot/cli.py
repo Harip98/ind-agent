@@ -7,7 +7,7 @@ import psycopg
 import typer
 
 from copilot.config import REPO_ROOT, get_settings
-from copilot.db.migrate import apply_migrations, set_role_passwords
+from copilot.db.migrate import apply_migrations, harden_service_roles
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -23,7 +23,7 @@ def migrate() -> None:
     settings = get_settings()
     with psycopg.connect(settings.dsn("app_owner"), autocommit=True) as conn:
         applied = apply_migrations(conn)
-        set_role_passwords(conn, settings)
+        harden_service_roles(conn, settings)
     typer.echo(f"applied: {', '.join(applied) if applied else 'nothing (up to date)'}")
 
 
