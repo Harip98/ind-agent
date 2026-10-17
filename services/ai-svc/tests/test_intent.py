@@ -101,3 +101,23 @@ def test_long_ranges_are_capped_at_30_days():
 ])
 def test_alarm_types(q, types):
     assert alarm_types(q) == types
+
+
+def test_last_n_days_is_exactly_n_days_across_dst():
+    as_of = datetime(2026, 11, 10, 8, 0, tzinfo=UTC)  # Berlin left DST on 2026-10-25
+    for q in ("in the last 30 days", "last week", "pump alarm"):
+        r = resolve_time(q, as_of, "Europe/Berlin")
+        assert (r.end - r.start).total_seconds() <= 30 * 86400, q
+    r = resolve_time("in the last 30 days", as_of, "Europe/Berlin")
+    assert (r.end - r.start).total_seconds() == 30 * 86400
+
+
+@pytest.mark.parametrize("q", ["Is pump 12 maybe overheating?", "pump 12 pressure decreased 5 bar",
+                               "pump 12 marked as faulty", "pump 12 junction box"])
+def test_ordinary_words_are_not_dates(q):
+    assert resolve_time(q, AS_OF, TZ).assumed
+
+
+def test_current_alone_is_not_an_alarm_keyword():
+    assert alarm_types("Investigate the current alarm on Pump 12") == ()
+    assert alarm_types("motor current is high") == ("high_current",)

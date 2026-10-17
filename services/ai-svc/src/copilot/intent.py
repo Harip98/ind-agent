@@ -15,8 +15,10 @@ _KIND_PREFIX = {"air compressor": "AC", "compressor": "AC", "ac": "AC", "cooling
 _ASSET = re.compile(r"\b(air\s+compressor|compressor|cooling\s+loop|loop|pump|ac|cl|p)[\s-]*0*(\d{1,3})\b", re.I)
 _GENERIC = re.compile(r"\b(air\s+compressor|compressor|cooling\s+loop|pump)s?\b", re.I)
 _MONTHS = {m: i for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split(), start=1)}
-_DAY_MONTH = re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\b")
-_MONTH_DAY = re.compile(r"\b([a-z]{3})[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b")
+_MONTH = (r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?"
+          r"|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)")
+_DAY_MONTH = re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+" + _MONTH + r"\b")
+_MONTH_DAY = re.compile(r"\b" + _MONTH + r"\s+(\d{1,2})(?:st|nd|rd|th)?\b")
 ASSET_SCHEMA = {"type": "object", "properties": {"asset_mention": {"type": ["string", "null"]}},
                 "required": ["asset_mention"]}
 _ALARM_WORDS = [
@@ -25,7 +27,7 @@ _ALARM_WORDS = [
     ("low_flow", re.compile(r"\bflow\b")),
     ("low_pressure", re.compile(r"\bpressure\b")),
     ("high_pressure", re.compile(r"\bpressure\b")),
-    ("high_current", re.compile(r"\b(current|amps|overload\w*)\b")),
+    ("high_current", re.compile(r"\b(motor current|current draw|amps|overload\w*)\b")),
     ("bad_quality", re.compile(r"\b(bad data|bad quality|no data|signal|flat-?line\w*)\b")),
 ]
 
@@ -102,6 +104,7 @@ def _explicit_date(q: str, today: date) -> date | None:
     found = [(m.group(1), m.group(2)) for m in _DAY_MONTH.finditer(q)]
     found += [(m.group(2), m.group(1)) for m in _MONTH_DAY.finditer(q)]
     for day_s, mon_s in found:
+        mon_s = mon_s[:3]
         if mon_s not in _MONTHS:
             continue
         try:
@@ -121,7 +124,7 @@ def resolve_time(question: str, as_of: datetime, timezone: str) -> TimeRange:
     def rng(start: datetime, end: datetime, label: str, assumed: bool = False) -> TimeRange:
         end = min(end, local_now)
         if start >= end:  # a future date: fall back to the default window and say so
-            return rng(local_now - timedelta(days=7), local_now, "last 7 days", True)
+            return rng(as_of - timedelta(days=7), local_now, "last 7 days", True)
         return TimeRange(start.astimezone(as_of.tzinfo), end.astimezone(as_of.tzinfo), label, assumed)
 
     if "yesterday" in q:
@@ -134,11 +137,13 @@ def resolve_time(question: str, as_of: datetime, timezone: str) -> TimeRange:
     if m := re.search(r"\b(\d{1,3})\s+days?\s+ago\b", q):
         n = int(m.group(1))
         return rng(*_day(today - timedelta(days=n), zone), f"{n} days ago")
+    # Rolling windows are measured in elapsed time (UTC), not wall-clock days, so a DST change
+    # never makes "last 30 days" exceed the data-svc 30-day limit.
     if m := re.search(r"\b(?:last|past)\s+(\d{1,3})\s+days?\b", q):
         n = min(int(m.group(1)), MAX_DAYS)
-        return rng(local_now - timedelta(days=n), local_now, f"last {n} days")
+        return rng(as_of - timedelta(days=n), local_now, f"last {n} days")
     if re.search(r"\b(?:last|past|this)\s+week\b", q):
-        return rng(local_now - timedelta(days=7), local_now, "last 7 days")
+        return rng(as_of - timedelta(days=7), local_now, "last 7 days")
     if d := _explicit_date(q, today):
         return rng(*_day(d, zone), d.isoformat())
-    return rng(local_now - timedelta(days=7), local_now, "last 7 days", assumed=True)
+    return rng(as_of - timedelta(days=7), local_now, "last 7 days", assumed=True)
