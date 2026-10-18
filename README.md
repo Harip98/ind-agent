@@ -22,7 +22,7 @@ Everything runs locally on a laptop (RTX 3050 Ti, 4 GB VRAM) with open models th
 | Another plant's equipment | The same answer as for an asset that does not exist |
 | Injected or unsafe instructions | The real investigation, without them |
 
-Details and examples: [docs/use-cases.md](docs/use-cases.md).
+Details and examples: [docs/use-cases.md](docs/use-cases.md). Requirements and their status: [docs/requirements.md](docs/requirements.md).
 
 ## How it works
 
