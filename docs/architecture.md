@@ -15,6 +15,8 @@ Example request:
 The assistant **investigates and recommends**. It never writes to equipment, control systems or
 any operational data store.
 
+Users, scenarios and expected outcomes: [use-cases.md](use-cases.md).
+
 ## 2. Context & constraints
 
 | Constraint | Decision |
