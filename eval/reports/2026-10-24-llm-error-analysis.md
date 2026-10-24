@@ -67,6 +67,21 @@ Same model, temperature 0, same 60 frozen test questions, code `4ca0111`:
 
 The one remaining miss (S-INC-01-2) wrote two numbers its citations did not contain; the verifier caught it.
 
+The error analysis rerun on the fixed code (2026-10-25) shows which failures are left:
+
+| | Test split ([fixed](llm-errors-test-fixed.md)) | Dev split ([fixed](llm-errors-dev-fixed.md)) |
+|---|---|---|
+| Cases verified (before → after) | 24/42 → **41/42** | 51/70 → **62/70** |
+| Failed attempts (before → after) | 48 of 72 → 3 of 44 | 67 of 118 → 21 of 83 |
+| Runaway generation · missing `O#` ref | 0 · 0 | 0 · 0 |
+| A correct number cited from the wrong observation | 3 | 17 |
+| Identifier read as a number (verifier false positive) | 0 | 2 |
+| True catches: invented number · unsafe or injected claim | 0 · 0 | 3 · 1 |
+
+Runaway generation and misplaced citations are gone, and identifier false positives nearly so. What remains is mostly
+the model citing a different observation than the one that holds the number it wrote. That is a citation error the
+verifier is right to reject; a per-number "which observation" hint in the prompt is the next thing to try.
+
 On the holdout plant, which no fix was tuned on ([e2e-holdout-llm.md](e2e-holdout-llm.md)): 75/81 expected outcomes,
 57/63 written reports verified. Five of the six misses are one incident, where the model copied the fault-signature
 match scores (1.00, 0.67) from its prompt into the text as if they were measurements. The verifier was right to reject

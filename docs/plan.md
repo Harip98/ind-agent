@@ -150,7 +150,7 @@ Tasks
   faults, two faults no signature describes and unseen phrasings; `eval/datasets/holdout.jsonl`
   (81 cases) frozen by `holdout.sha256`.
 - Operations: `GET /readyz`, a defined status for every dependency failure (`tests/test_failures.py`),
-  `copilot bench` (latency, errors, memory, recovery; writes `eval/reports/<date>-ops-metrics.md`).
+  `copilot bench` (latency, errors, memory, recovery; `eval/reports/2026-10-25-ops-metrics.md`).
   See [deployment.md](deployment.md).
 - One-command Docker demo (`docker compose --profile demo up -d --build`); `serve --dev-docker` trusts
   only the Docker gateway and is refused outside the image.

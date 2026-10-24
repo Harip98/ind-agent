@@ -1,0 +1,192 @@
+[
+  {
+    "mode": "template",
+    "phases": {
+      "warm-up": {
+        "n": 3,
+        "ok": 3,
+        "error_rate": 0.0,
+        "codes": {
+          "200": 3
+        },
+        "statuses": {
+          "ok": 2,
+          "needs_clarification": 1
+        },
+        "p50": 754,
+        "p95": 1376,
+        "p99": 1376,
+        "max": 1376,
+        "tokens_mean": null
+      },
+      "steady": {
+        "n": 40,
+        "ok": 40,
+        "error_rate": 0.0,
+        "codes": {
+          "200": 40
+        },
+        "statuses": {
+          "ok": 27,
+          "needs_clarification": 11,
+          "insufficient_evidence": 2
+        },
+        "p50": 558,
+        "p95": 805,
+        "p99": 868,
+        "max": 868,
+        "tokens_mean": null
+      },
+      "data-svc stopped": {
+        "n": 10,
+        "ok": 0,
+        "error_rate": 1.0,
+        "codes": {
+          "503 data_unavailable": 10
+        },
+        "statuses": {},
+        "p50": 2060,
+        "p95": 2076,
+        "p99": 2076,
+        "max": 2076,
+        "tokens_mean": null
+      },
+      "data-svc restarted": {
+        "n": 30,
+        "ok": 30,
+        "error_rate": 0.0,
+        "codes": {
+          "200": 30
+        },
+        "statuses": {
+          "insufficient_evidence": 10,
+          "ok": 20
+        },
+        "p50": 576,
+        "p95": 758,
+        "p99": 773,
+        "max": 773,
+        "tokens_mean": null
+      },
+      "postgres stopped": {
+        "n": 10,
+        "ok": 0,
+        "error_rate": 1.0,
+        "codes": {
+          "503 data_unavailable": 10
+        },
+        "statuses": {},
+        "p50": 7973,
+        "p95": 11994,
+        "p99": 11994,
+        "max": 11994,
+        "tokens_mean": null
+      },
+      "postgres restarted": {
+        "n": 30,
+        "ok": 26,
+        "error_rate": 0.133,
+        "codes": {
+          "503 data_unavailable": 4,
+          "200": 26
+        },
+        "statuses": {
+          "ok": 17,
+          "needs_clarification": 9
+        },
+        "p50": 536,
+        "p95": 649,
+        "p99": 944,
+        "max": 944,
+        "tokens_mean": null
+      }
+    },
+    "recovery": [
+      {
+        "service": "data-svc",
+        "seconds_to_first_success": 0.1,
+        "failed_meanwhile": 0
+      },
+      {
+        "service": "postgres",
+        "seconds_to_first_success": 1.2,
+        "failed_meanwhile": 4
+      }
+    ],
+    "memory": {
+      "rss_mib": 89.08203125,
+      "peak_mib": 94.6484375,
+      "gpu": {
+        "ollama_models": {
+          "qwen2.5:3b-instruct": 2063,
+          "nomic-embed-text:latest": 320
+        },
+        "gpu_used_mib": 2602,
+        "gpu_total_mib": 4096
+      },
+      "containers": {
+        "data-svc": "9.559MiB",
+        "postgres": "29.85MiB"
+      }
+    }
+  },
+  {
+    "mode": "llm",
+    "phases": {
+      "warm-up": {
+        "n": 3,
+        "ok": 3,
+        "error_rate": 0.0,
+        "codes": {
+          "200": 3
+        },
+        "statuses": {
+          "ok": 1,
+          "degraded": 1,
+          "needs_clarification": 1
+        },
+        "p50": 3984,
+        "p95": 6298,
+        "p99": 6298,
+        "max": 6298,
+        "tokens_mean": 2463
+      },
+      "steady": {
+        "n": 40,
+        "ok": 40,
+        "error_rate": 0.0,
+        "codes": {
+          "200": 40
+        },
+        "statuses": {
+          "degraded": 3,
+          "ok": 24,
+          "needs_clarification": 11,
+          "insufficient_evidence": 2
+        },
+        "p50": 4036,
+        "p95": 8846,
+        "p99": 9180,
+        "max": 9180,
+        "tokens_mean": 1729
+      }
+    },
+    "recovery": [],
+    "memory": {
+      "rss_mib": 89.8515625,
+      "peak_mib": 94.6484375,
+      "gpu": {
+        "ollama_models": {
+          "qwen2.5:3b-instruct": 2063,
+          "nomic-embed-text:latest": 320
+        },
+        "gpu_used_mib": 2602,
+        "gpu_total_mib": 4096
+      },
+      "containers": {
+        "data-svc": "10.3MiB",
+        "postgres": "37.68MiB"
+      }
+    }
+  }
+]

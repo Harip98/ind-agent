@@ -13,14 +13,20 @@ the GPU. Nothing calls an external API.
 | Disk | 3 GB (images, data) | 6 GB (+ the two Ollama models, about 2.3 GB) |
 | OS | Windows 11 with Docker Desktop, or Linux with Docker Engine | same (on Linux, Ollama needs one setting; see [Ollama on Linux](#ollama-on-linux)) |
 
-Measured resource use is in the operational metrics report (`eval/reports/<date>-ops-metrics.md`, written by `copilot bench`): the
-ai-svc process working set, the VRAM held by each Ollama model and the memory of each container.
+Measured resource use is in the operational metrics report
+([`eval/reports/2026-10-25-ops-metrics.md`](../eval/reports/2026-10-25-ops-metrics.md), written by `copilot bench`):
+the ai-svc process peaks at about 95 MiB, `qwen2.5:3b-instruct` holds about 2.0 GB of VRAM and `nomic-embed-text`
+about 0.3 GB, and data-svc and Postgres use tens of MiB each.
 
-| Model | VRAM | Report latency p50 / p95 (test split) |
+| Model | VRAM | Full investigation p50 / p95 (test split) |
 |---|---|---|
-| `qwen2.5:3b-instruct` (default) | about 2.1 GB | about 11 s / 22 s |
-| `qwen2.5:7b-instruct` | does not fit 4 GB; partly in RAM | about 49 s / 126 s |
-| none (`mode=template`) | 0 | 0.6 s / 0.7 s |
+| `qwen2.5:3b-instruct` (default) | about 2.0 GB | about 5.2 s / 9.9 s |
+| `qwen2.5:7b-instruct` | does not fit 4 GB; partly in RAM | about 49 s / 126 s (measured before the 2026-10-24 writer fixes) |
+| none (`mode=template`) | 0 | about 1.1 s / 1.6 s |
+
+Under the bench's mixed load (full investigations plus clarifications), steady-state p50 / p95 is 4.0 s / 8.8 s with
+the 3B and 0.56 s / 0.81 s without a model, with no errors. After a stopped data-svc or Postgres is started again,
+the next successful request comes within 0.1 s and 1.2 s.
 
 ## One-command demo
 
