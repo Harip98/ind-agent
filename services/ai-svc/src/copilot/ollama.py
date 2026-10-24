@@ -12,6 +12,19 @@ class OllamaError(RuntimeError):
 class OllamaOutputError(OllamaError):
     """Ollama answered, but the model output is not valid JSON (e.g. truncated at num_predict)."""
 
+    def __init__(self, message: str, raw: str = "", usage: dict | None = None) -> None:
+        super().__init__(message)
+        self.raw, self.usage = raw, usage or {}
+
+
+def _usage(data: dict) -> dict:
+    return {
+        "prompt_tokens": data.get("prompt_eval_count", 0),
+        "completion_tokens": data.get("eval_count", 0),
+        "seconds": data.get("total_duration", 0) / 1e9,
+        "done_reason": data.get("done_reason", ""),  # "length" = cut off at num_predict
+    }
+
 
 class OllamaClient:
     def __init__(
@@ -52,13 +65,8 @@ class OllamaClient:
         try:
             content = json.loads(raw)
         except ValueError as exc:
-            raise OllamaOutputError(f"chat output was not valid JSON ({exc})") from exc
-        usage = {
-            "prompt_tokens": data.get("prompt_eval_count", 0),
-            "completion_tokens": data.get("eval_count", 0),
-            "seconds": data.get("total_duration", 0) / 1e9,
-        }
-        return content, usage
+            raise OllamaOutputError(f"chat output was not valid JSON ({exc})", raw, _usage(data)) from exc
+        return content, _usage(data)
 
     def chat_tools(
         self, model: str, messages: list[dict], tools: list[dict],
@@ -76,9 +84,4 @@ class OllamaClient:
             message = data["message"]
         except (httpx.HTTPError, KeyError, ValueError) as exc:
             raise OllamaError(f"chat failed: {exc}") from exc
-        usage = {
-            "prompt_tokens": data.get("prompt_eval_count", 0),
-            "completion_tokens": data.get("eval_count", 0),
-            "seconds": data.get("total_duration", 0) / 1e9,
-        }
-        return message, usage
+        return message, _usage(data)

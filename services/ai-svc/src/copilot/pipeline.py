@@ -11,7 +11,7 @@ from copilot.analysis import LONG_AFTER, LONG_BEFORE, SHORT_AFTER, SHORT_BEFORE,
 from copilot.auth import Principal
 from copilot.causes import SignatureSet, match
 from copilot.config import Settings
-from copilot.datasvc import AlarmInfo
+from copilot.datasvc import AlarmInfo, NotFound, SensorWindow
 from copilot.intent import AssetMatch, TimeRange, alarm_types, resolve_asset, resolve_time
 from copilot.llm import LLM, ToolLLM
 from copilot.ollama import OllamaError, OllamaOutputError
@@ -24,6 +24,7 @@ from copilot.report import (
     report_schema,
     summary_text,
     template_report,
+    tidy,
     verify,
 )
 from copilot.retrieval import Hit
@@ -84,9 +85,18 @@ def collect(ds, asset, alarm: AlarmInfo, deps: PipelineDeps, timezone: str,
     """Reading windows around the alarm -> deterministic analysis -> ranked candidate causes."""
     windows = {}
     t = alarm.raised_at
+
+    def fetch(tag: str, start: datetime, end: datetime) -> SensorWindow:
+        try:
+            return ds.window(asset.id, tag, start, end)
+        except NotFound:  # a related stream data-svc no longer has: "no readings", not a failed investigation
+            if tag == alarm.tag:
+                raise
+            return SensorWindow(asset.id, tag, asset.sensor(tag).unit, start, end, 60, ())
+
     for s in asset.sensors:
-        windows[s.tag] = TagWindows(ds.window(asset.id, s.tag, t - SHORT_BEFORE, t + SHORT_AFTER),
-                                    ds.window(asset.id, s.tag, t - LONG_BEFORE, t + LONG_AFTER))
+        windows[s.tag] = TagWindows(fetch(s.tag, t - SHORT_BEFORE, t + SHORT_AFTER),
+                                    fetch(s.tag, t - LONG_BEFORE, t + LONG_AFTER))
     lap("data")
     roles = deps.signatures.roles.get(asset.model, {})
     analysis = analyze(asset, alarm, windows, roles, timezone)
@@ -241,9 +251,15 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
         if deps.llm is None:
             raise LLMUnavailable("no LLM configured")
         stats = {"model": deps.llm.name, "attempts": 0, "prompt_tokens": 0, "completion_tokens": 0,
-                 "seconds": 0.0, "verifier_errors": []}
+                 "seconds": 0.0, "verifier_errors": [], "attempt_log": []}
         errors: list[str] | None = None
         gen_s = ver_s = 0.0
+
+        def account(usage: dict) -> None:
+            stats["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            stats["completion_tokens"] += usage.get("completion_tokens", 0)
+            stats["seconds"] = round(stats["seconds"] + usage.get("seconds", 0.0), 2)
+
         for _ in range(2):
             stats["attempts"] += 1
             t0 = time.perf_counter()
@@ -251,19 +267,26 @@ def investigate(req: InvestigateRequest, principal: Principal, deps: PipelineDep
                 result = deps.llm.generate_json(SYSTEM_PROMPT, render_prompt(ev, errors), report_schema(ev))
             except OllamaOutputError as exc:  # the model answered badly: a failed attempt, not an outage
                 errors = [f"your output was not valid JSON ({exc}); keep it short and complete"]
+                account(exc.usage)
                 stats["verifier_errors"] += errors
+                stats["attempt_log"].append({"outcome": "invalid_json", "done_reason": exc.usage.get("done_reason", ""),
+                                             "completion_tokens": exc.usage.get("completion_tokens", 0),
+                                             "errors": errors})
                 gen_s += time.perf_counter() - t0
                 continue
             except OllamaError as exc:
                 raise LLMUnavailable(str(exc)) from exc
             t1 = time.perf_counter()
-            stats["prompt_tokens"] += result.prompt_tokens
-            stats["completion_tokens"] += result.completion_tokens
-            stats["seconds"] = round(stats["seconds"] + result.seconds, 2)
-            errors = verify(result.data, ev)
+            account({"prompt_tokens": result.prompt_tokens, "completion_tokens": result.completion_tokens,
+                     "seconds": result.seconds})
+            draft = tidy(result.data)
+            errors = verify(draft, ev)
             gen_s, ver_s = gen_s + (t1 - t0), ver_s + (time.perf_counter() - t1)
+            stats["attempt_log"].append({"outcome": "rejected" if errors else "accepted",
+                                         "done_reason": result.done_reason,
+                                         "completion_tokens": result.completion_tokens, "errors": errors})
             if not errors:
-                report = result.data
+                report = draft
                 break
             stats["verifier_errors"] += errors
         out["llm"] = stats

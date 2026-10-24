@@ -10,6 +10,7 @@ class LLMResult:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     seconds: float = 0.0
+    done_reason: str = ""
 
 
 class LLM(Protocol):
@@ -24,8 +25,9 @@ class OllamaLLM:
 
     def generate_json(self, system: str, user: str, schema: dict) -> LLMResult:
         data, usage = self._client.chat_json(
-            self.name, system, user, schema, num_ctx=self._num_ctx, num_predict=512)
-        return LLMResult(data, usage["prompt_tokens"], usage["completion_tokens"], usage["seconds"])
+            self.name, system, user, schema, num_ctx=self._num_ctx, num_predict=768)  # fits the capped schema
+        return LLMResult(data, usage["prompt_tokens"], usage["completion_tokens"], usage["seconds"],
+                         usage.get("done_reason", ""))
 
 
 @dataclass

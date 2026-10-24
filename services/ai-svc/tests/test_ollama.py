@@ -50,7 +50,7 @@ def test_chat_json_sends_schema_and_parses_content():
 
     data, usage = _client(handler).chat_json("m", "sys", "user", {"type": "object"})
     assert data == {"a": 1}
-    assert usage == {"prompt_tokens": 10, "completion_tokens": 5, "seconds": 2.0}
+    assert usage == {"prompt_tokens": 10, "completion_tokens": 5, "seconds": 2.0, "done_reason": ""}
     assert b'"format"' in seen["body"] and b'"temperature":0' in seen["body"].replace(b" ", b"")
 
 
@@ -68,6 +68,17 @@ def test_invalid_json_output_is_an_output_error_not_unavailability():
             "m", "s", "u", {})
 
 
+def test_truncated_output_keeps_raw_text_usage_and_done_reason():
+    from copilot.ollama import OllamaOutputError
+
+    body = {"message": {"content": '{"a": "loop loop'}, "prompt_eval_count": 9, "eval_count": 512,
+            "total_duration": 1_000_000_000, "done_reason": "length"}
+    with pytest.raises(OllamaOutputError) as info:
+        _client(lambda r: httpx.Response(200, json=body)).chat_json("m", "s", "u", {})
+    assert info.value.raw == '{"a": "loop loop'
+    assert info.value.usage == {"prompt_tokens": 9, "completion_tokens": 512, "seconds": 1.0, "done_reason": "length"}
+
+
 def test_chat_tools_sends_tools_and_returns_the_assistant_message():
     seen = {}
 
@@ -81,7 +92,7 @@ def test_chat_tools_sends_tools_and_returns_the_assistant_message():
     assert seen["body"]["tools"] == [{"type": "function"}] and seen["body"]["stream"] is False
     assert seen["body"]["options"]["temperature"] == 0
     assert msg["tool_calls"][0]["function"]["name"] == "list_assets"
-    assert usage == {"prompt_tokens": 7, "completion_tokens": 3, "seconds": 2.0}
+    assert usage == {"prompt_tokens": 7, "completion_tokens": 3, "seconds": 2.0, "done_reason": ""}
 
 
 def test_chat_tools_http_error_is_ollama_error():

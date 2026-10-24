@@ -206,10 +206,15 @@ def test_retrieval_query_includes_the_question(sim):
 def test_truncated_llm_output_is_a_failed_attempt_not_an_outage(sim):
     from copilot.ollama import OllamaOutputError
 
-    llm = FakeLLM([OllamaOutputError("chat output was not valid JSON"), _good_llm_answer()])
+    usage = {"prompt_tokens": 900, "completion_tokens": 512, "seconds": 3.0, "done_reason": "length"}
+    llm = FakeLLM([OllamaOutputError("chat output was not valid JSON", "{", usage), _good_llm_answer()])
     out = investigate(InvestigateRequest(Q, as_of=END), _p(), make_deps(sim, llm=llm), "t20")
     assert out["status"] == "ok" and out["llm"]["attempts"] == 2
     assert any("not valid JSON" in e for e in out["llm"]["verifier_errors"])
+    # the failed attempt's tokens count towards the cost, and the log says why it failed
+    assert out["llm"]["completion_tokens"] >= 512 and out["llm"]["prompt_tokens"] >= 900
+    assert [a["outcome"] for a in out["llm"]["attempt_log"]] == ["invalid_json", "accepted"]
+    assert out["llm"]["attempt_log"][0]["done_reason"] == "length"
 
 
 def test_question_gets_its_own_retrieval(sim):
