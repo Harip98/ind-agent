@@ -1,0 +1,9 @@
+{
+  "code": "4ca0111",
+  "corpus": "429a5803dcd317cc",
+  "dataset": "8e3cffc82da6ce1e",
+  "mode": "llm",
+  "model": "qwen2.5:3b-instruct",
+  "signatures": "3203e672424f2655",
+  "strategy": "hybrid"
+}
