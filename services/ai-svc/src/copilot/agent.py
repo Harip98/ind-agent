@@ -28,7 +28,7 @@ from copilot.pipeline import (
     observations_dict,
 )
 from copilot.report import Evidence, build_docs, template_report, verify
-from copilot.retrieval import Hit
+from copilot.retrieval import Hit, StrategyUnavailable
 
 MAX_TURNS = 6
 MAX_SUBMISSIONS = 2  # one corrective round, as in llm mode
@@ -161,6 +161,8 @@ class Session:
             return f"error: {exc}"
         except NotFound:
             return "error: not found"
+        except StrategyUnavailable:  # a deployment limit, not a bad argument: the API answers 422
+            raise
         except (ValueError, OverflowError) as exc:  # e.g. an impossible date inside an id
             return f"error: invalid argument ({type(exc).__name__})"
 

@@ -300,3 +300,15 @@ def test_knowledge_base_down_is_503_knowledge_base_unavailable(sim):
 
     r = _api(make_deps(sim, retriever=DownRetriever())).post("/investigate", json=BODY, headers=_auth())
     assert r.status_code == 503 and r.json()["error"]["code"] == "knowledge_base_unavailable"
+
+
+@pytest.mark.parametrize("tz", [None, 5, "Mars/Olympus_Mons", ""])
+def test_a_bad_tenant_time_zone_is_data_service_error(tz):
+    body = {"tenant": {"id": "acme", "name": "Acme", "timezone": tz}, "assets": []}
+    with pytest.raises(DataServiceError):
+        _ds(lambda r: httpx.Response(200, json=body)).assets()
+
+
+def test_extra_tenant_fields_are_ignored():
+    body = {"tenant": {"id": "acme", "name": "Acme", "timezone": "Asia/Kolkata", "plan": "x"}, "assets": []}
+    assert _ds(lambda r: httpx.Response(200, json=body)).assets()[0].timezone == "Asia/Kolkata"

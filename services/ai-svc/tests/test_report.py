@@ -90,37 +90,74 @@ def test_identifiers_are_not_numbers(ev):
     assert verify(r, ev) == []
 
 
-@pytest.mark.parametrize("text", [
-    "Follow SOP-PUMP-07 section 5.1 to restore cooling water flow.",
-    "Follow SOP-PUMP-07 § 5.1 to restore cooling water flow.",
-    "Follow SOP-PUMP-07 5.1 to restore cooling water flow.",
-    "Follow SOP-PUMP-07 v2 §5.1 (Sect. 5.1) to restore cooling water flow.",
+STRAINER = _hit("SOP-CW-02", 1, "3.2", "Strainer", "Clean the strainer.")
+
+
+@pytest.fixture
+def ev4():
+    """`ev` plus a fourth, current document: D4 = SOP-CW-02 v1 §3.2."""
+    return Evidence("q", ASSET, ALARM, OBS, CANDS, build_docs(HITS + [STRAINER]), "Asia/Kolkata")
+
+
+@pytest.mark.parametrize("text, refs", [
+    ("Follow SOP-PUMP-07 section 5.1 to restore cooling water flow.", ["D1"]),
+    ("Follow SOP-PUMP-07 § 5.1 to restore cooling water flow.", ["D1"]),
+    ("Follow SOP-PUMP-07 v2 §5.1 (Sect. 5.1) to restore cooling water flow.", ["D1"]),
+    ("Follow SOP-PUMP-07#5.1 to restore cooling water flow.", ["D1"]),
+    ("Follow SOP-PUMP-07 (5.1) to restore cooling water flow.", ["D1"]),
+    ("Follow step 5.1 of SOP-PUMP-07 to restore cooling water flow.", ["D1"]),
+    ("Follow sections 5.1 and 3.2 to restore cooling water flow.", ["D1", "D4"]),
+    ("Follow §§ 5.1 and 3.2, SOP-PUMP-07 and SOP-CW-02.", ["D1", "D4"]),
 ])
-def test_the_cited_section_may_be_named_in_any_usual_spelling(ev, text):
+def test_the_cited_sections_may_be_named_in_any_usual_spelling(ev4, text, refs):
     r = _good()
-    r["recommendation"]["text"] = text
-    assert verify(r, ev) == []
+    r["recommendation"] = {"text": text, "refs": refs}
+    assert verify(r, ev4) == []
 
 
 @pytest.mark.parametrize("text, number", [
-    ("Keep flow above 5.1 m3/h.", "5.1"),                      # a section number is not a measurement
-    ("Follow SOP-PUMP-07 §5.3 and top up the grease.", "5.3"),  # the superseded section, while citing D1
-    ("Follow the BULLETIN-VEND-14 §4 notes.", "4"),            # a section the sentence does not cite
+    ("Keep flow above 5.1 m3/h.", "5.1"),                          # a section number is not a measurement
+    ("Per SOP-PUMP-07 5.1 m3/h is the minimum flow.", "5.1"),     # nor is one written after the doc id alone
+    ("Follow SOP-PUMP-07 §5.3 and top up the grease.", "5.3"),    # the superseded section, while citing D1
+    ("Follow SOP-PUMP-07 v1 §5.1 to restore flow.", "5.1"),       # the superseded version of the section
+    ("Follow BULLETIN-VEND-14 §5.1 to restore flow.", "5.1"),     # the cited number under an uncited document
+    ("Follow the BULLETIN-VEND-14 §4 notes.", "4"),               # a section the sentence does not cite
+    ("Follow sections 5.1 and 5.3 to restore flow.", "5.3"),      # one listed section is not cited
+    ("Keep flow (5.1) above the minimum.", "5.1"),                # a bare "(5.1)" may be a measurement
 ])
-def test_only_the_cited_current_section_is_exempt(ev, text, number):
+def test_only_the_cited_current_sections_are_exempt(ev, text, number):
     r = _good()
     r["recommendation"]["text"] = text
     assert f"recommendation: number {number} does not appear in the documents it cites" in verify(r, ev)
 
 
-def test_alarm_time_in_another_format_is_backed_by_the_alarm_observation():
-    obs = [Observation("O1", "alarm", "TT-101", "TT-101 raised high_temp at 2026-10-16 09:11 IST: 85.1 degC.",
-                       {"value": 85.1}), OBS[1]]
-    ev2 = Evidence("q", ASSET, ALARM, obs, CANDS, build_docs(HITS), "Asia/Kolkata")
+ALARM_OBS = Observation("O1", "alarm", "TT-101", "TT-101 raised high_temp at 2026-10-16 09:11 IST: 85.1 degC.",
+                        {"value": 85.1})
+
+
+@pytest.mark.parametrize("text", [
+    "TT-101 alarmed at 9:11 on 16 October.",
+    "TT-101 alarmed on Oct 16th, 2026 at 09:11 IST.",
+    "TT-101 alarmed on 2026-10-16 at 09:11:00.",
+])
+def test_the_alarm_date_and_time_may_be_written_in_any_usual_spelling(text):
+    ev2 = Evidence("q", ASSET, ALARM, [ALARM_OBS, OBS[1]], CANDS, build_docs(HITS), "Asia/Kolkata")
     r = _good()
-    r["explanations"][0] = {**r["explanations"][0], "text": "TT-101 alarmed at 9:11 on 16 October.",
-                            "refs": ["O1"]}
+    r["explanations"][0] = {**r["explanations"][0], "text": text, "refs": ["O1"]}
     assert verify(r, ev2) == []
+
+
+@pytest.mark.parametrize("text, number", [
+    ("Bearing temperature rose 11 degC above normal.", "11"),      # 11 is only the alarm's minute
+    ("Bearing temperature climbed 16 degC in 9 min.", "16"),       # 16 is only the alarm's day
+    ("Cooling water flow was 10 m3/h at 2026 rpm.", "2026"),
+    ("TT-101 alarmed on 15 October.", "15"),                      # a wrong date is still checked
+])
+def test_the_alarm_date_and_time_are_not_evidence_for_a_value(text, number):
+    ev2 = Evidence("q", ASSET, ALARM, [ALARM_OBS, OBS[1]], CANDS, build_docs(HITS), "Asia/Kolkata")
+    r = _good()
+    r["explanations"][0] = {**r["explanations"][0], "text": text, "refs": ["O1"]}
+    assert f"explanation 1: number {number} does not appear in the evidence it cites" in verify(r, ev2)
 
 
 def test_digits_inside_a_tag_are_not_evidence_for_a_value(ev):
@@ -138,6 +175,7 @@ def test_digits_inside_a_tag_are_not_evidence_for_a_value(ev):
     ("Flow fell.  Then  pressure dro", 30, "Flow fell."),           # capped before whitespace was collapsed
     ("Flow fell. It reached 38.", 26, "Flow fell."),               # cut right after a decimal point
     ("Flow fell. It reached 38.", 400, "Flow fell. It reached 38."),
+    ("Flow is low. Temp hit 38. Flow is low.", 38, "Flow is low. Temp hit 38."),  # the last one was a repeat
 ])
 def test_tidy_text(text, cap, expected):
     assert tidy_text(text, cap) == expected

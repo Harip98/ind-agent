@@ -103,24 +103,47 @@ class Evidence:
                *(o.tag for o in self.observations if o.tag), *(d.hit.doc_id for d in self.docs)}
         return sorted(ids, key=len, reverse=True)
 
-    def identifiers_for(self, refs: list[str]) -> list[str]:
-        """Patterns for what a sentence citing `refs` may write that is not a measurement, in the order they are
-        removed: the section numbers of the current documents it cites ("§5.1", "section 5.1", "SOP-PUMP-07 5.1";
-        never a superseded or an uncited section), the alarm's local date and time, then the names."""
-        cited = [d for r in refs if (d := self.doc(r)) and _current(d)]
+    def alarm_time_patterns(self) -> list[str]:
+        """The alarm's local date and time in the spellings a writer uses ("2026-10-16", "16 October 2026",
+        "Oct 16th", "09:11", "9:11"). They identify the alarm; they are never evidence for a measurement."""
         local = self.alarm.raised_at.astimezone(ZoneInfo(self.timezone))
-        return ([_section_pattern(d.hit.doc_id, d.hit.section_no) for d in cited]
-                + [_name_pattern(local.strftime(f)) for f in ("%Y-%m-%d", "%H:%M")]
-                + [_name_pattern(n) for n in self.names])
+        month = rf"(?i:{local:%B}|{local:%b}\.?)"
+        day = rf"0?{local.day}(?:st|nd|rd|th)?"
+        year = rf"(?:,?\s+{local.year})?"
+        return [_name_pattern(local.strftime("%Y-%m-%d")),
+                rf"(?<![A-Za-z0-9]){day}\s+{month}{year}(?![A-Za-z0-9])",
+                rf"(?<![A-Za-z0-9]){month}\s+{day}{year}(?![A-Za-z0-9])",
+                rf"(?<![0-9:]){local.hour:02d}:{local.minute:02d}(?::\d\d)?(?![0-9])",
+                rf"(?<![0-9:]){local.hour}:{local.minute:02d}(?::\d\d)?(?![0-9])"]
+
+    def strip_identifiers(self, text: str, refs: list[str]) -> str:
+        """`text` (a sentence citing `refs`) without what is not a measurement: references to the sections of the
+        current documents it cites, the alarm's date and time, and the names. A section number written after
+        another document's id, after a superseded version, or for a section it does not cite stays in the text,
+        so the number check rejects it."""
+        cited = {(d.hit.doc_id, d.hit.version, d.hit.section_no) for r in refs if (d := self.doc(r)) and _current(d)}
+
+        def section(m: re.Match) -> str:
+            doc, ver = m.group("doc"), m.group("ver")
+            if m.group("kw") == "(" and doc is None:  # "(5.1)" alone may be a measurement
+                return m.group(0)
+            unexplained = [no for no in _SECTION_NO.findall(m.group("nos")) if not any(
+                no == n and (doc is None or (doc == d and (ver is None or int(ver) == v))) for d, v, n in cited)]
+            return " " + " ".join(unexplained) + " "
+
+        docs = "|".join(re.escape(d) for d in sorted({d.hit.doc_id for d in self.docs}, key=len, reverse=True))
+        text = re.sub(_SECTION_REF.format(docs=docs or "(?!)"), section, text)
+        return strip_identifiers(text, self.alarm_time_patterns() + [_name_pattern(n) for n in self.names])
 
     def numbers_for(self, refs: list[str]) -> list[float]:
-        """Numbers available to a sentence that cites `refs`. Names do not count as numbers, and neither does a
-        document's own section number: "5.1" in §5.1 is not evidence for "5.1 m3/h"."""
+        """Numbers available to a sentence that cites `refs`. Names and the alarm's own date and time do not count
+        as numbers, and neither does a document's section number: "5.1" in §5.1 is not evidence for "5.1 m3/h"."""
         names = [_name_pattern(n) for n in self.names]
         nums: list[float] = []
         for r in refs:
             if o := self.obs(r):
-                nums += [float(n) for n in _NUMBER.findall(strip_identifiers(o.text, names))]
+                text = strip_identifiers(o.text, self.alarm_time_patterns() + names)
+                nums += [float(n) for n in _NUMBER.findall(text)]
                 nums += [float(v) for v in o.values.values() if isinstance(v, (int, float))]
             elif d := self.doc(r):
                 h = d.hit
@@ -129,13 +152,16 @@ class Evidence:
         return nums
 
 
+# A section reference: an optional retrieved document id (and version), then §, §§, #, "section(s)", "sect.",
+# "step", "clause" or "(" after a document id, then one number or a list ("sections 5.1 and 3.2").
+_SECTION_NO = re.compile(r"\d+(?:\.\d+)*")
+_SECTION_REF = (r"(?:(?<![A-Za-z0-9])(?P<doc>{docs})(?:\s+v(?P<ver>\d+))?\s*,?\s*)?"
+                r"(?P<kw>§§?|#|\(|(?i:sections?|sect\.?|sec\.|steps?|clauses?)(?![A-Za-z]))\s*"
+                r"(?P<nos>\d+(?:\.\d+)*(?:\s*(?:,|and|&|or)\s*\d+(?:\.\d+)*)*)\)?")
+
+
 def _name_pattern(name: str) -> str:
     return rf"(?<![A-Za-z0-9]){re.escape(name)}(?![A-Za-z0-9])"
-
-
-def _section_pattern(doc_id: str, section_no: str) -> str:
-    prefix = rf"(?:§\s*|\b(?i:sec(?:tion|t)?\.?)\s*|(?<![A-Za-z0-9]){re.escape(doc_id)}(?:\s+v\d+)?\s*§?\s*)"
-    return prefix + re.escape(section_no) + r"(?![\d.]*\d)"
 
 
 def strip_identifiers(text: str, patterns: list[str]) -> str:
@@ -236,13 +262,15 @@ def tidy_text(text: str, cap: int) -> str:
     rest = text[matches[-1].end():].strip() if matches else text
     seen: set[str] = set()
     kept = []
+    last_is_new = False  # whether the text's final sentence was kept (a repeat of an earlier one is not)
     for m in matches:
         sentence = m.group().strip()
-        if sentence.lower() not in seen:
+        last_is_new = sentence.lower() not in seen
+        if last_is_new:
             seen.add(sentence.lower())
             kept.append(sentence)
-    if capped and len(kept) > 1 and not rest and _CUT_DECIMAL.search(kept[-1]):
-        kept.pop()  # "... reached 38." cut from "38.3": a fragment, not a sentence
+    if capped and not rest and last_is_new and len(kept) > 1 and _CUT_DECIMAL.search(kept[-1]):
+        kept.pop()  # the text ends "... reached 38." cut from "38.3": a fragment, not a sentence
     if rest and (not kept or not capped):
         kept.append(rest)
     return " ".join(kept)
@@ -259,8 +287,9 @@ def tidy(report: dict) -> dict:
     return {**report, "explanations": exps, "recommendation": rec}
 
 
-def _unsupported_numbers(text: str, evidence: list[float], identifiers: list[str]) -> list[str]:
-    return [raw for raw in _NUMBER.findall(strip_identifiers(text, identifiers))
+def _unsupported_numbers(ev: Evidence, text: str, refs: list[str]) -> list[str]:
+    evidence = ev.numbers_for(refs)
+    return [raw for raw in _NUMBER.findall(ev.strip_identifiers(text, refs))
             if not any(abs(float(raw) - e) <= 0.051 for e in evidence)]
 
 
@@ -298,7 +327,7 @@ def verify(report: dict, ev: Evidence) -> list[str]:
         if code in seen:
             errors.append(f"explanation {i}: duplicate cause {code}")
         seen.add(code)
-        for n in _unsupported_numbers(text, ev.numbers_for(refs), ev.identifiers_for(refs)):
+        for n in _unsupported_numbers(ev, text, refs):
             errors.append(f"explanation {i}: number {n} does not appear in the evidence it cites")
     if codes and codes[0] not in seen:
         errors.append(f"explanations must include the top candidate {codes[0]}")
@@ -314,7 +343,7 @@ def verify(report: dict, ev: Evidence) -> list[str]:
     if (procs := procedure_docs(ev)) and not any(d.id in rec_refs for d in procs):
         errors.append(f"recommendation must cite the procedure for {codes[0]} "
                       f"({', '.join(d.id for d in procs)})")
-    for n in _unsupported_numbers(rec_text, ev.numbers_for(rec_refs), ev.identifiers_for(rec_refs)):
+    for n in _unsupported_numbers(ev, rec_text, rec_refs):
         errors.append(f"recommendation: number {n} does not appear in the documents it cites")
     observed = " ".join(o.text for o in ev.observations).lower()
     stale_phrases = _superseded_phrases(ev)

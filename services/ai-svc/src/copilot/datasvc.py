@@ -4,6 +4,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -190,7 +191,11 @@ class DataServiceClient:
 
     def _assets(self) -> tuple[TenantInfo, list[AssetInfo]]:
         body = self._get("/v1/assets")
-        tenant = TenantInfo(**body["tenant"])
+        t = body["tenant"]
+        if not isinstance(t["timezone"], str):
+            raise TypeError("expected a time zone name")
+        ZoneInfo(t["timezone"])  # an unknown zone is a malformed body (503), not a crash in the analysis
+        tenant = TenantInfo(t["id"], t["name"], t["timezone"])
         assets = [
             AssetInfo(a["id"], a["name"], a["model"], a["site"], tuple(
                 SensorInfo(s["tag"], s["kind"], s["description"], s["unit"], _num(s["lo_limit"]),

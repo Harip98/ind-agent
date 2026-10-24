@@ -1,23 +1,33 @@
+import re
+
 from typer.testing import CliRunner
 
 from copilot.cli import app
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _flat(output: str) -> str:
+    """CLI error text as plain words: no colour codes (rich forces them when GITHUB_ACTIONS is set) and no box
+    drawing, so a wrapped message reads as one line."""
+    return " ".join(_ANSI.sub("", output).replace("│", " ").split())
 
 
 def test_simgen_rejects_unparseable_end_cleanly():
     result = CliRunner().invoke(app, ["simgen", "--end", "yesterday"])
     assert result.exit_code == 2
-    assert "--end" in result.output
+    assert "--end" in _flat(result.output)
 
 
 def test_simgen_rejects_too_few_days_cleanly():
     result = CliRunner().invoke(app, ["simgen", "--days", "5", "--end", "2026-10-17T00:00+00:00"])
     assert result.exit_code == 2
-    assert "days" in result.output
+    assert "days" in _flat(result.output)
 
 
 def test_eval_and_ask_name_agent_mode():
     result = CliRunner().invoke(app, ["eval", "--mode", "bogus"])
-    assert result.exit_code == 2 and "agent" in result.output
+    assert result.exit_code == 2 and "agent" in _flat(result.output)
     assert "agent" in CliRunner().invoke(app, ["ask", "--help"]).output
 
 
@@ -48,11 +58,6 @@ def test_eval_compare_summarizes_a_tagged_run_by_its_base_mode(monkeypatch, tmp_
     result = CliRunner().invoke(app, ["eval-compare", "--modes", "llm-qwen7b,agent-v2", "--reports-dir", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert seen == ["llm", "agent"]
-
-
-def _flat(output: str) -> str:
-    """CLI error text without the box rich draws around it, so a wrapped message reads as one line."""
-    return " ".join(output.replace("│", " ").split())
 
 
 def test_dev_docker_is_refused_outside_the_image(monkeypatch):

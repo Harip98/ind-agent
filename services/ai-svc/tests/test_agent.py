@@ -275,3 +275,17 @@ def test_find_alarms_gives_short_refs_that_analyze_alarm_accepts(sim, p12_alarm)
 def test_short_refs_belong_to_the_latest_search_only(sim):
     out, llm = run(sim, [call("analyze_alarm", alarm_id="A1"), call("ask_clarification", message="?")])
     assert tool_results(llm)[0].startswith("error:")
+
+
+def test_an_unavailable_retrieval_strategy_is_not_hidden_as_a_tool_error(sim, p12_alarm):
+    from copilot.config import Settings
+    from copilot.retrieval import Retriever, StrategyUnavailable
+
+    class NoEmbedder:
+        def embed_query(self, text):
+            raise AssertionError("the strategy check comes first")
+
+    deps = make_deps(sim, retriever=Retriever(Settings(), NoEmbedder()))  # the optional reranker is not installed
+    deps.tool_llm = FakeToolLLM(happy_prefix(p12_alarm))
+    with pytest.raises(StrategyUnavailable):  # the API turns this into 422 strategy_unavailable
+        investigate(InvestigateRequest(Q, as_of=END, mode="agent", strategy="hybrid_rerank"), _p(), deps, "tb")
