@@ -45,7 +45,7 @@ temperature rose together while flow and motor current stayed flat. The top caus
 water restriction, and the recommendation cites the cooling-water section of the pump SOP.
 
 **Modes:** *Evidence only* returns a template report built from the evidence in under a second.
-*Language model* has the local LLM write the text (10–20 s with qwen2.5:3b). If the LLM's draft
+*Language model* has the local LLM write the text (about 5 s with qwen2.5:3b). If the LLM's draft
 fails verification twice, the template report is returned instead and marked `degraded`, so the
 user always gets an answer the evidence supports.
 
