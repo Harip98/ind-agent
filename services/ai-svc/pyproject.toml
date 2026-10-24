@@ -12,7 +12,6 @@ dependencies = [
     "pydantic-settings>=2.6",
     "typer>=0.15",
     "tzdata>=2024.2",
-    "sentence-transformers>=3.0",
     "fastapi>=0.115",
     "uvicorn>=0.30",
 ]
@@ -22,6 +21,11 @@ copilot = "copilot.cli:app"
 
 [dependency-groups]
 dev = ["pytest>=8.3", "ruff>=0.8"]
+# optional cross-encoder for strategy=hybrid_rerank; pulls torch, so the container image and CI leave it out
+rerank = ["sentence-transformers>=3.0"]
+
+[tool.uv]
+default-groups = ["dev", "rerank"]
 
 [build-system]
 requires = ["hatchling"]
@@ -36,5 +40,10 @@ addopts = ["-m", "not integration"]
 markers = ["integration: needs the docker compose Postgres (run with -m integration)"]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
+
+[tool.ruff.lint]
+# explicit, so a ruff upgrade does not change what CI enforces
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "B905", "E501"]  # typer.Option(...) defaults are the idiom; zip() inputs are equal-length by construction

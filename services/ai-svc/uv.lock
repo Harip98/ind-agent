@@ -73,6 +73,7 @@ wheels = [
 name = "copilot"
 version = "0.1.0"
 source = { editable = "." }
+default-groups = ["dev", "rerank"]
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
@@ -81,7 +82,6 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "pyyaml" },
-    { name = "sentence-transformers" },
     { name = "typer" },
     { name = "tzdata" },
     { name = "uvicorn" },
@@ -91,6 +91,9 @@ dependencies = [
 dev = [
     { name = "pytest" },
     { name = "ruff" },
+]
+rerank = [
+    { name = "sentence-transformers" },
 ]
 
 [package.metadata]
@@ -102,7 +105,6 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.6" },
     { name = "pyjwt", specifier = ">=2.9" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "sentence-transformers", specifier = ">=3.0" },
     { name = "typer", specifier = ">=0.15" },
     { name = "tzdata", specifier = ">=2024.2" },
     { name = "uvicorn", specifier = ">=0.30" },
@@ -113,6 +115,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3" },
     { name = "ruff", specifier = ">=0.8" },
 ]
+rerank = [{ name = "sentence-transformers", specifier = ">=3.0" }]
 
 [[package]]
 name = "cuda-bindings"

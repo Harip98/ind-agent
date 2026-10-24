@@ -4,7 +4,12 @@ from pathlib import Path
 import pytest
 
 from copilot.kb.corpus import (
-    CORPUS_DIR, SHARED, CorpusError, chunk_section, load_corpus, parse_document,
+    CORPUS_DIR,
+    SHARED,
+    CorpusError,
+    chunk_section,
+    load_corpus,
+    parse_document,
 )
 
 DOC = """---

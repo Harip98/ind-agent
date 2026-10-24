@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/ai-svc
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: app_owner
+          POSTGRES_PASSWORD: owner_dev_pw
+          POSTGRES_DB: indagent
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app_owner -d indagent"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.22"
+      - run: cp ../../.env.example ../../.env
+      - name: Install (no reranker; it pulls torch and no test needs it)
+        run: uv sync --frozen --no-group rerank
+      - name: Lint
+        run: uv run --no-sync ruff check src tests
+      - name: Unit tests
+        run: uv run --no-sync pytest -q
+      - name: Integration tests (Postgres, RLS, ingest, retrieval)
+        run: |
+          uv run --no-sync copilot migrate
+          uv run --no-sync pytest -q -m integration
+
+  go:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/data-svc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/data-svc/go.mod
+      - run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - run: go test ./...
+
+  images:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - name: Build the demo images
+        run: docker compose --profile demo build

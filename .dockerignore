@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.worktrees
+.superpowers
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+data
+eval
+docs
+services/data-svc/bin
