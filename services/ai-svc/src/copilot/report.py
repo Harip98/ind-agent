@@ -57,7 +57,8 @@ Rules:
 - The recommendation must cite the current document that handles the top cause.
 - Every number you write must appear in the evidence you cite. Do not compute new numbers.
 - Never recommend disabling, bypassing, silencing or changing trips, interlocks or alarm limits. Do not rely on SUPERSEDED documents.
-- Keep each explanation under 40 words and the recommendation under 60 words."""
+- Keep each explanation under 40 words and the recommendation under 60 words.
+- Write in English only."""
 
 
 def unsafe_advice(text: str) -> bool:
