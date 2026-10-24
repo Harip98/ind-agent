@@ -67,20 +67,32 @@ Same model, temperature 0, same 60 frozen test questions, code `8c699de`:
 
 The one remaining miss (S-INC-01-2) wrote two numbers its citations did not contain; the verifier caught it.
 
-The error analysis rerun on the fixed code (2026-10-25) shows which failures are left:
+The error analysis rerun on the fixed code (2026-10-25, code `d086d8b`, which also rejects text that switches
+language) shows which failures are left:
 
 | | Test split ([fixed](llm-errors-test-fixed.md)) | Dev split ([fixed](llm-errors-dev-fixed.md)) |
 |---|---|---|
-| Cases verified (before → after) | 24/42 → **41/42** | 51/70 → **62/70** |
-| Failed attempts (before → after) | 48 of 72 → 3 of 44 | 67 of 118 → 21 of 83 |
+| Cases verified (before → after) | 24/42 → **39/42** | 51/70 → **61/70** |
+| Failed attempts (before → after) | 48 of 72 → 9 of 48 | 67 of 118 → 24 of 85 |
 | Runaway generation · missing `O#` ref | 0 · 0 | 0 · 0 |
-| A correct number cited from the wrong observation | 3 | 17 |
-| Identifier read as a number (verifier false positive) | 0 | 2 |
-| True catches: invented number · unsafe or injected claim | 0 · 0 | 3 · 1 |
+| A correct number cited from the wrong observation | 5 | 17 |
+| Number or section the verifier treats as unexplained | 3 | 5 |
+| True catches: invented number · unsafe or injected claim | 2 · 0 | 4 · 1 |
 
-Runaway generation and misplaced citations are gone, and identifier false positives nearly so. What remains is mostly
-the model citing a different observation than the one that holds the number it wrote. That is a citation error the
-verifier is right to reject; a per-number "which observation" hint in the prompt is the next thing to try.
+Runaway generation and misplaced citations are gone. What remains is mostly the model citing a different observation
+than the one that holds the number it wrote. That is a citation error the verifier is right to reject; a per-number
+"which observation" hint in the prompt is the next thing to try. The "unexplained" row is mostly deliberate
+strictness: procedure section numbers written into an explanation, which may cite only observations, and an
+equipment tag the model invented. One was a real false positive: the asset model ("CP-200 pumps") was read as the
+number 200; the asset model is a name since the commit after `d086d8b`.
+
+**Run-to-run variation.** An identical run of the test split an hour earlier, on code that differed only by the
+language check (which never fired), verified 41/42 and the dev split 62/70. Decoding on the GPU is not bit-exact even
+at temperature 0, so repeated runs of these 42 and 70 cases differ by one or two reports.
+
+**Language switching.** Two accepted dev drafts in the earlier run, and one report seen live in the UI, switched
+script mid-sentence ("... provide the 证据."). None of the evaluated test or holdout reports did. The verifier now
+rejects such text, so the retry or the evidence-only fallback answers instead.
 
 On the holdout plant, which no fix was tuned on ([e2e-holdout-llm.md](e2e-holdout-llm.md)): 75/81 expected outcomes,
 57/63 written reports verified. Five of the six misses are one incident, where the model copied the fault-signature
@@ -89,7 +101,8 @@ them; leaving the scores out of the writer's prompt is the obvious next fix.
 
 ## Limitations
 
-- One run per mode at temperature 0, on 60 questions from 5 incidents; the intervals in the e2e reports are optimistic.
+- One run per mode at temperature 0, on 60 questions from 5 incidents; the intervals in the e2e reports are optimistic,
+  and repeated runs differ by one or two written reports (see above).
 - The before and after runs differ only in the code; the model, corpus, data and questions are the same.
 - The baseline error analysis (2026-10-20) and the 2026-10-18 e2e run are separate runs of the same code and model, so
   their verified counts differ slightly (24 vs 27 of 42).

@@ -27,7 +27,7 @@ When an alarm goes off in a plant, an engineer gathers the alarm history, the se
 |---|---|
 | Retrieval-augmented generation | Hybrid full-text + pgvector search with reciprocal rank fusion over versioned procedures: recall@5 = 1.00 on 43 queries. Superseded sections are flagged and never recommended |
 | Structured output | The model fills a JSON schema whose citation and cause fields are enums, with length caps. Constrained decoding therefore cannot produce a reference or cause that does not exist, or loop until the output is cut off |
-| Guardrails | A deterministic verifier checks every citation and number and blocks advice to bypass or disable trips, interlocks or alarms. After two failed drafts, the user gets an evidence-only report flagged `degraded` |
+| Guardrails | A deterministic verifier checks every citation and number, blocks advice to bypass or disable trips, interlocks or alarms, and rejects text that drifts into another language. After two failed drafts, the user gets an evidence-only report flagged `degraded` |
 | Evaluation | A SHA-256-locked test split, a separate frozen holdout plant, deterministic scoring with no LLM judge, and Wilson 95% intervals. An error analysis of rejected drafts drove measured fixes |
 | Agents, and when not to use one | A tool-calling agent mode (7 read-only tools), built and measured against the pipeline: 10/60 vs 59/60 correct outcomes at 5.8× the tokens |
 | LLMOps | Local models on a 4 GB GPU, a readiness probe (`/readyz`), a defined status for every dependency failure, per-request JSON logs with step latency and tokens, CI, and a one-command Docker demo |
@@ -194,7 +194,7 @@ Five of the six pipeline misses are one incident: the model copied the fault-sig
 - **Synthetic data.** Telemetry, alarms and incidents come from a simulator, and the procedures are self-authored. None of this has been run against a real plant.
 - **One author.** The same person wrote the simulator faults, the fault signatures, the corpus and the questions. Nobody else has reviewed the questions. The effective sample size is the number of incidents (5 in test, 11 in holdout), so the intervals are optimistic.
 - **Rule-based diagnosis.** Causes come from `signatures.yaml`. For a fault with no signature, the report says the readings match no known signature; it does not diagnose the fault.
-- **A small model.** qwen2.5:3b fits on the 4 GB GPU and now writes a verifiable report 41 of 42 times on the test split and 57 of 63 on the holdout; the rest fall back to the evidence-only report. Each mode was run once, at temperature 0.
+- **A small model.** qwen2.5:3b fits on the 4 GB GPU and now writes a verifiable report 41 of 42 times on the test split and 57 of 63 on the holdout; the rest fall back to the evidence-only report. Each mode was run once, at temperature 0; GPU decoding is not bit-exact, and repeated runs differ by one or two reports.
 - **Prototype identity and parsing.** HS256 dev tokens with a shared secret stand in for a real identity provider (OIDC). Time parsing does not understand weekday names such as "last Tuesday".
 
 ## Quick start

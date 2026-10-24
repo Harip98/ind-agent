@@ -249,7 +249,10 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
    "SOP-PUMP-07 (5.1)"). A section number of a superseded or uncited document, or one written bare after a
    document id ("SOP-PUMP-07 5.1"), is checked like any number. Neither a document's section number nor the
    alarm's own date and time is evidence for a measurement ("5.1" in §5.1 does not support "5.1 m3/h"; the
-   minute in 09:11 does not support "rose 11 degC"). The schema already restricts explanation refs to O#,
+   minute in 09:11 does not support "rose 11 degC"). Text that switches to another script (CJK, Cyrillic,
+   Arabic, Indic and others; the 3B model occasionally does this mid-sentence) is rejected; Greek letters and
+   symbols pass. Advice to defeat a protection, unsupported blame claims and phrases found only in a superseded
+   procedure are rejected too. The schema already restricts explanation refs to O#,
    recommendation refs to current D#, and caps every text and ref list, so the decoder cannot loop until
    `num_predict` (see `eval/reports/2026-10-24-llm-error-analysis.md`). On failure: one retry with the
    errors appended. On a second failure: a deterministic **template report** (observations + candidate
