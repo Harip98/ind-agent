@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 640" width="980" height="640" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13">
+  <title>ind-agent architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .code { fill: #eff6ff; stroke: #3b82f6; stroke-width: 1.2; }
+      .llm { fill: #fffbeb; stroke: #d97706; stroke-width: 1.2; }
+      .safe { fill: #ecfdf5; stroke: #059669; stroke-width: 1.2; }
+      .store { fill: #f1f5f9; stroke: #64748b; stroke-width: 1.2; }
+      .group { fill: none; stroke: #cbd5e1; stroke-width: 1.2; stroke-dasharray: 5 4; }
+      .h { font-weight: 600; fill: #0f172a; }
+      .t { fill: #334155; }
+      .s { fill: #64748b; font-size: 11.5px; }
+      .edge { stroke: #475569; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+      .soft { stroke: #94a3b8; stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="980" height="640" fill="#ffffff"/>
+
+  <!-- clients -->
+  <rect class="box" x="20" y="40" width="150" height="58" rx="8"/>
+  <text class="h" x="95" y="64" text-anchor="middle">Web UI / CLI</text>
+  <text class="s" x="95" y="83" text-anchor="middle">question + JWT</text>
+  <path class="edge" d="M170,69 H232"/>
+
+  <!-- ai-svc -->
+  <rect class="group" x="240" y="20" width="390" height="600" rx="12"/>
+  <text class="h" x="258" y="44">ai-svc · Python, FastAPI</text>
+  <text class="s" x="258" y="61">code runs the steps in a fixed order; the LLM only writes text</text>
+
+  <rect class="code" x="262" y="76" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="96">1  Intent</text>
+  <text class="s" x="276" y="112">rules: asset + time window; ambiguous → clarification buttons</text>
+
+  <rect class="code" x="262" y="132" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="152">2  Alarms + readings</text>
+  <text class="s" x="276" y="168">via data-svc with the user's own token; group alarms into events</text>
+
+  <rect class="code" x="262" y="188" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="208">3  Signal analysis · numpy</text>
+  <text class="s" x="276" y="224">trends vs 24/48 h, sudden drops, gaps, flat-lines → O1…On</text>
+
+  <rect class="code" x="262" y="244" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="264">4  Fault signatures</text>
+  <text class="s" x="276" y="280">signatures.yaml → ranked causes with confidence</text>
+
+  <rect class="code" x="262" y="300" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="320">5  Hybrid retrieval</text>
+  <text class="s" x="276" y="336">full-text + pgvector (RRF) → D1…Dn, superseded flagged</text>
+
+  <rect class="llm" x="262" y="356" width="346" height="52" rx="7"/>
+  <text class="h" x="276" y="376">6  LLM writes the report</text>
+  <text class="s" x="276" y="392">JSON schema: refs and causes are enums; length capped</text>
+  <text class="s" x="276" y="404">retrieved text is data, never instructions</text>
+
+  <rect class="safe" x="262" y="420" width="346" height="52" rx="7"/>
+  <text class="h" x="276" y="440">7  Verifier</text>
+  <text class="s" x="276" y="456">every ref exists, every number matches its cited source,</text>
+  <text class="s" x="276" y="468">no bypass / disable / silence advice, nothing superseded</text>
+
+  <rect class="safe" x="262" y="500" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="520">Fails twice → template report</text>
+  <text class="s" x="276" y="536">deterministic, from evidence only; status "degraded"</text>
+  <path class="edge" d="M435,472 V498"/>
+  <text class="s" x="443" y="489">rejected ×2</text>
+
+  <rect class="box" x="262" y="556" width="346" height="44" rx="7"/>
+  <text class="h" x="276" y="576">Incident report</text>
+  <text class="s" x="276" y="592">summary · O# observations · causes · procedure D# · trace id</text>
+
+  <!-- step arrows -->
+  <path class="edge" d="M435,120 V130"/>
+  <path class="edge" d="M435,176 V186"/>
+  <path class="edge" d="M435,232 V242"/>
+  <path class="edge" d="M435,288 V298"/>
+  <path class="edge" d="M435,344 V354"/>
+  <path class="edge" d="M435,408 V418"/>
+  <path class="edge" d="M620,446 C640,446 640,578 610,578"/>
+  <text class="s" x="645" y="516">passed</text>
+  <path class="edge" d="M262,578 C200,578 120,560 95,100"/>
+  <text class="s" x="104" y="380" transform="rotate(-80 104 380)">response</text>
+
+  <!-- data-svc -->
+  <rect class="box" x="700" y="110" width="260" height="72" rx="8"/>
+  <text class="h" x="716" y="134">data-svc · Go</text>
+  <text class="s" x="716" y="152">read-only; tenant taken only from the JWT;</text>
+  <text class="s" x="716" y="168">rate limit, window and row caps</text>
+  <path class="edge" d="M608,154 H698"/>
+
+  <!-- postgres -->
+  <rect class="store" x="700" y="230" width="260" height="150" rx="8"/>
+  <text class="h" x="716" y="254">Postgres 16</text>
+  <text class="s" x="716" y="272">forced row-level security; a role per service</text>
+  <rect class="box" x="716" y="284" width="228" height="40" rx="6"/>
+  <text class="t" x="728" y="301">ops · alarms, 1-min readings</text>
+  <text class="s" x="728" y="316">SELECT-only role for data-svc</text>
+  <rect class="box" x="716" y="330" width="228" height="40" rx="6"/>
+  <text class="t" x="728" y="347">kb · procedure sections</text>
+  <text class="s" x="728" y="362">pgvector HNSW + GIN full-text</text>
+  <path class="edge" d="M830,182 V282"/>
+  <path class="edge" d="M608,322 C660,322 660,350 714,350"/>
+
+  <!-- ollama -->
+  <rect class="llm" x="700" y="430" width="260" height="78" rx="8"/>
+  <text class="h" x="716" y="454">Ollama · local GPU (4 GB)</text>
+  <text class="s" x="716" y="472">qwen2.5:3b-instruct · report text</text>
+  <text class="s" x="716" y="488">nomic-embed-text · query embeddings</text>
+  <path class="edge" d="M608,382 C660,382 660,460 698,460"/>
+  <path class="soft" d="M698,480 C660,480 650,336 610,330"/>
+
+  <!-- legend -->
+  <rect class="code" x="700" y="548" width="16" height="12" rx="2"/><text class="s" x="722" y="558">deterministic code</text>
+  <rect class="llm" x="830" y="548" width="16" height="12" rx="2"/><text class="s" x="852" y="558">model</text>
+  <rect class="safe" x="700" y="570" width="16" height="12" rx="2"/><text class="s" x="722" y="580">safety net</text>
+  <rect class="store" x="830" y="570" width="16" height="12" rx="2"/><text class="s" x="852" y="580">storage</text>
+  <text class="s" x="700" y="604">Everything runs on one laptop; data is synthetic.</text>
+</svg>

@@ -59,12 +59,12 @@ slower and spills into system RAM; select it with `COPILOT_LLM_MODEL` when memor
 client (CLI / API / later web UI)
    │  user JWT {sub, tenant_id, roles}
    ▼
-┌───────────────────────────┐        ┌──────────────────────────┐
-│ ai-svc                    │───────►│ Ollama (host)            │
-│ Python 3.12, FastAPI      │        │ qwen2.5:7b-instruct      │
-│ package `copilot`         │        │ llama3.2:3b-instruct     │
-└──────┬─────────────┬──────┘        │ nomic-embed-text         │
-       │             │               └──────────────────────────┘
+┌───────────────────────────┐        ┌────────────────────────────────┐
+│ ai-svc                    │───────►│ Ollama (host)                  │
+│ Python 3.12, FastAPI      │        │ qwen2.5:3b-instruct (default)  │
+│ package `copilot`         │        │ qwen2.5:7b-instruct (optional) │
+└──────┬─────────────┬──────┘        │ nomic-embed-text               │
+       │             │               └────────────────────────────────┘
        │ forwards    │ DB role kb_reader
        │ user token  │ (no grants on schema ops)
        ▼             │
@@ -113,30 +113,36 @@ uv project, package `copilot`, FastAPI.
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /investigate` | Run an investigation. Body `{question, as_of?, mode?: "llm" \| "template", strategy?}` |
+| `POST /investigate` | Run an investigation. Body `{question, as_of?, mode?: "llm" \| "template" \| "agent", strategy?: "vector" \| "hybrid" \| "hybrid_rerank", asset_id?, alarm_id?}`; `mode` defaults to `llm` |
 | `GET /healthz` | Liveness |
+| `GET /readyz` | Readiness: `ready`, `degraded` or `unavailable` (503), with the modes that can answer now (§7) |
 | `GET /`, `/static/*` | Web UI (vanilla JS + vendored Chart.js 4.4.1, no third-party requests; renders server data with `textContent` only; CSP `default-src 'self'`, `nosniff`, `Referrer-Policy: no-referrer`) |
-| `GET /dev/defaults`, `POST /dev/token` | Demo helpers. Enabled only by `create_app(dev=True)`, which only `copilot serve --dev` passes (no environment variable can turn it on); bound to 127.0.0.1, answered only for loopback clients, and Host must be `127.0.0.1`/`localhost` (blocks DNS rebinding). Otherwise 404 |
+| `GET /dev/defaults`, `POST /dev/token` | Demo helpers. Enabled only by `create_app(dev=True)`, which only `copilot serve --dev` or `copilot serve --dev-docker` passes (no environment variable can turn it on). `--dev` binds 127.0.0.1 and answers loopback clients only. `--dev-docker` is refused outside the ai-svc image (it needs `COPILOT_CONTAINER=1` plus `/.dockerenv` or `/run/.containerenv`), binds 0.0.0.0 and trusts loopback plus the container's Docker gateway only, which is where the host's requests to the port published on 127.0.0.1 arrive from. The image's default command has no dev mode; `docker-compose.yml` opts in. In both modes Host must be `127.0.0.1`/`localhost` (TrustedHost, blocks DNS rebinding; another Host gets 400). Other clients get 404 |
 
-CLI (`copilot …`): `simgen`, `ingest`, `devtoken`, `ask`, `eval`.
+CLI (`copilot …`): `migrate`, `simgen`, `ingest`, `search`, `devtoken`, `serve`, `ask`, `eval-retrieval`, `eval-build`,
+`eval`, `eval-llm-errors`, `eval-compare`, `bench`.
 
 Modules:
 
 | Module | Responsibility |
 |---|---|
 | `config` | Settings from env (model names, URLs, timeouts, limits) |
-| `llm` | Ollama client (chat with JSON-schema `format`, embeddings); `FakeLLM` for tests |
-| `datasvc_client` | Typed httpx client for data-svc; forwards the caller's token |
-| `intent` | Request → `InvestigationQuery`; asset + time resolution; clarification |
-| `analyzers/` | Deterministic numpy analyses → `Observation`s |
-| `signatures.yaml` + `causes` | Observation patterns → candidate cause codes |
-| `retrieval/` | `vector`, `hybrid` (FTS + vector, RRF), `hybrid_rerank` strategies |
-| `report` | Evidence bundle → LLM report (JSON schema) |
-| `verify` | Citation and number checks, retry, template fallback |
-| `pipeline` | Orchestrates the steps; collects timings and trace |
+| `api`, `cli` | FastAPI app (`/investigate`, `/healthz`, `/readyz`, web UI, dev tokens); the `copilot` Typer CLI |
+| `auth` | JWT issue and verification (`Principal`) |
+| `ollama` | Ollama HTTP client: chat with a JSON-schema `format`, tool calls, embeddings |
+| `llm` | Model interfaces (`LLM.generate_json`, `ToolLLM.chat`) over Ollama; `FakeLLM` / `FakeToolLLM` for tests |
+| `datasvc` | Typed httpx client for data-svc; forwards the caller's token; malformed bodies become `DataServiceError` |
+| `intent` | Question → asset + time window + alarm types; clarification |
+| `analysis` | Deterministic numpy analyses → `Observation`s |
+| `signatures.yaml` + `causes` | Observation patterns → ranked candidate cause codes |
+| `retrieval/` | `vector`, `hybrid` (FTS + vector, RRF), optional `hybrid_rerank` |
+| `report` | Evidence bundle → prompt and JSON schema; tidy, verifier, deterministic summary and template report |
+| `pipeline` | Orchestrates the steps, the retry and the template fallback; collects timings and trace |
+| `agent` | `mode=agent`: the model drives seven read-only tools over the same data, retrieval and verifier |
+| `kb/` | Corpus → versions → sections → chunks → embeddings + tsvector |
 | `simgen/` | Synthetic tenants, assets, telemetry, alarms, ground truth |
-| `ingest/` | Corpus → versions → sections → chunks → embeddings + tsvector |
-| `eval/` | Dataset loading, runners, metrics, Markdown report |
+| `eval/` | Datasets and splits, end-to-end runner and scoring, retrieval metrics, LLM error analysis, ops bench |
+| `web/` | The single-page UI (vanilla JS, vendored Chart.js) |
 
 ### 4.3 Postgres
 
@@ -214,7 +220,11 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
    versions match, those are returned with a `stale` flag. Strategies:
    - `vector`: exact cosine top-k over `nomic-embed-text` (`search_query:` / `search_document:` prefixes)
    - `hybrid`: Postgres FTS (`ts_rank_cd`) + vector, fused with Reciprocal Rank Fusion
-   - `hybrid_rerank`: hybrid top-20 → `BAAI/bge-reranker-base` CrossEncoder (CPU) → top-5
+   - `hybrid_rerank`: hybrid top-20 → `BAAI/bge-reranker-base` CrossEncoder (CPU) → top-5; needs the
+     optional `rerank` dependency group, otherwise `422 strategy_unavailable`
+
+   If a query embedding fails (15 s timeout), searches run on full-text only and embeddings are skipped for
+   the next 30 s, so a hung Ollama costs one timeout per investigation, not one per search.
 
    Results become document sections `D1..Dn` with `{doc_id, version, section_no, heading}`.
 7. **Report** — the LLM receives the evidence bundle (alarm, observations, candidate causes,
@@ -229,11 +239,21 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
      "insufficient_evidence": ["..."]
    }
    ```
-8. **Verify** — every ref exists in the bundle; each explanation cites ≥ 1 observation; the
-   recommendation cites ≥ 1 document section; numbers in text match the cited observation values
-   (within rounding). On failure: one retry with the errors appended. On a second failure: a
-   deterministic **template report** (observations + candidate causes + sections, no LLM prose)
-   with `degraded: true`.
+8. **Verify** — a deterministic tidy step first drops repeated sentences and a fragment cut off at the
+   length cap (it only removes text). Then: every ref exists in the bundle; each explanation cites ≥ 1
+   observation; the recommendation cites the top cause's current procedure; every number in a sentence
+   appears in the evidence that sentence cites (within rounding). Identifiers are removed before numbers are
+   read: tags, asset and document ids; the alarm's local date and time in their usual spellings
+   ("2026-10-16", "16 October", "9:11"); and references to sections of the current documents the sentence
+   cites ("§5.1", "section 5.1", "sections 5.1 and 3.2", "step 5.1", "SOP-PUMP-07 §5.1", "SOP-PUMP-07#5.1",
+   "SOP-PUMP-07 (5.1)"). A section number of a superseded or uncited document, or one written bare after a
+   document id ("SOP-PUMP-07 5.1"), is checked like any number. Neither a document's section number nor the
+   alarm's own date and time is evidence for a measurement ("5.1" in §5.1 does not support "5.1 m3/h"; the
+   minute in 09:11 does not support "rose 11 degC"). The schema already restricts explanation refs to O#,
+   recommendation refs to current D#, and caps every text and ref list, so the decoder cannot loop until
+   `num_predict` (see `eval/reports/2026-10-24-llm-error-analysis.md`). On failure: one retry with the
+   errors appended. On a second failure: a deterministic **template report** (observations + candidate
+   causes + sections, no LLM prose) with `degraded: true`.
 
 **Response**
 
@@ -251,8 +271,9 @@ question ─► 1 intent ─► 2 alarms ─► 3 readings ─► 4 analyzers �
 
 ### 5.1 Agent mode (M6 experiment, `mode=agent`)
 
-`copilot/agent.py` lets `qwen2.5:7b-instruct` drive the investigation itself through Ollama tool
-calling, to measure approach B against the pipeline on the same questions, verifier and scoring.
+`copilot/agent.py` lets the configured LLM (`COPILOT_LLM_MODEL`, measured with `qwen2.5:3b-instruct`) drive
+the investigation itself through Ollama tool calling, to measure approach B against the pipeline on the same
+questions, verifier and scoring.
 
 - **Tools (all read-only):** `list_assets`, `find_alarms(asset_id, start, end, alarm_type?)` (≤ 30 days,
   `alarm_type` from a fixed enum), `analyze_alarm(alarm_id)` (the pipeline's deterministic analysis and
@@ -285,19 +306,26 @@ calling, to measure approach B against the pipeline on the same questions, verif
   tools; the verifier rejects fabricated references and numbers.
 - **No machine control:** there are no write endpoints anywhere in the serving path.
 - **Limits:** data-svc window and row/point caps, per-token rate limit, question length cap
-  (1,000 chars), LLM timeout 60 s per call.
+  (1,000 chars), LLM timeout 240 s per call (`COPILOT_LLM_TIMEOUT_S`), query embedding timeout 15 s with a
+  30 s back-off after a failure, ingest embedding timeout 60 s.
 
 ## 7. Error handling
 
 | Situation | Behaviour |
 |---|---|
-| Ollama down / timeout | `503`; `mode=template` still works (no LLM) |
-| data-svc down | `503`; no partial report |
+| Ollama down / timeout | `503 llm_unavailable`; `mode=template` still works (no LLM) |
+| data-svc down | `503 data_unavailable`; no partial report |
 | Unknown / ambiguous asset, or several alarm events | `200` with `status: needs_clarification` |
 | No time in the question | Last 7 days, listed in `query.assumptions` |
-| Embedding model down | Retrieval falls back to keyword (FTS) search; warning logged |
+| Embedding model down | Retrieval falls back to keyword (FTS) search; embeddings skipped for 30 s; warning logged |
+| `strategy=hybrid_rerank` without the optional `rerank` dependency group | `422 strategy_unavailable` |
 | No matching alarm | `200` with `status: insufficient_evidence` |
 | Missing / flat-lined sensor data | Recorded as an observation, not an error |
+| A related sensor unknown to data-svc (404) | Treated as "no readings"; the alarmed sensor missing is `503` |
+| data-svc answers 200 with a malformed body | `503 data_unavailable` |
+| Knowledge base (Postgres) unreachable | `503 knowledge_base_unavailable` |
+| Model output not JSON / wrong shape | Failed attempt, retried once, then `status: degraded` |
+| Readiness | `GET /readyz`: `ready`; `degraded` (LLM missing → `modes: [template]`; embedding model missing → every mode, `retrieval: keyword_only`); or `unavailable` (503: data-svc or the knowledge base down); see deployment.md |
 | Verifier fails twice | `200` with `status: degraded`, template report |
 | Cross-tenant asset | Same response as an unknown asset |
 
@@ -309,10 +337,14 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
 
 ## 9. Synthetic data & corpus
 
-- **simgen:** 2 tenants (`acme`, `globex`), ~10 assets (centrifugal pumps, a cooling loop, an air
-  compressor), 1-minute readings for ~30 days, ~8 injected fault scenarios plus normal periods
-  and nuisance alarms. Writes `ground_truth.jsonl` (asset, alarm, injected cause code, window).
-  Every row carries `synthetic = true`.
+- **simgen:** 3 tenants (`acme`, `globex`, and `hollow`, a holdout-only plant in America/Chicago),
+  15 assets (centrifugal pumps, cooling loops, air compressors), 1-minute readings for ~30 days,
+  29 injected incidents plus normal periods and nuisance alarms. The `hollow` incidents include
+  overlapping "combo" incidents on one asset (two faults, or a fault with an unrelated nuisance spike in
+  the same hour) and two causes no signature describes (`SEAL_LEAK`, `CIRCULATION_PUMP_WEAR`). Writes
+  `ground_truth.jsonl` (asset, alarm, injected cause code, window; `combo` for overlapping incidents).
+  The `hollow` assets are generated last, so for the same seed the core tenants' data, and dev/test,
+  are unchanged. Every row carries `synthetic = true`.
 - **corpus/:** Markdown with front-matter:
   ```yaml
   doc_id: SOP-PUMP-07
@@ -330,10 +362,13 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
 
 ## 10. Evaluation
 
-- 172 generated questions: **dev 112**, **held-out test 60** (group split by incident; frozen;
-  SHA-256 recorded; never used for tuning). Human review of the questions is still pending.
-- Mix: normal ~50%, missing evidence ~15%, stale documents ~10%, unauthorized ~10%,
-  ambiguous ~10%, injection ~5%.
+- `copilot eval-build` writes 172 generated questions from `acme` and `globex`: **dev 112**, **held-out
+  test 60** (group split by incident; frozen; SHA-256 recorded; never used for tuning), plus a frozen
+  **holdout 81** from `hollow` only (`holdout.sha256`). Human review of the questions is still pending.
+- Mix (dev/test): normal ~50%, missing evidence ~15%, stale documents ~10%, unauthorized ~10%,
+  ambiguous ~10%, injection ~5%. The holdout adds causes the test split lacks, question phrasings the
+  intent rules were not written against, combinations (every real cause must be in the top 3) and
+  novel faults (pass when the report names no cause with medium or high confidence).
 - Metrics:
   - Retrieval: recall@5, MRR, nDCG@5 per strategy
   - Root cause: top-1 / top-3 cause-code match against ground truth (deterministic, no LLM judge)
@@ -341,7 +376,7 @@ prompt/completion tokens, retrieval strategy and hit IDs, verifier result, final
   - Correct abstention / clarification rate
   - **Cross-tenant leakage = 0** (hard gate)
   - Latency p50 / p95 per step; tokens and GPU/CPU-seconds per request
-- Output: `eval/reports/e2e-<split>-<mode>.{jsonl,md}` (resumable JSONL + report).
+- Output: `eval/reports/e2e-<split>-<mode>[-<tag>].{jsonl,md}` (resumable JSONL + report).
 
 **Results (2026-10-17, template mode, after the M4 review):** 172 generated cases; the test split
 holds out 5 whole incidents (5 causes) and a third of the other groups. Dev 112/112 and test 60/60 on status,
@@ -372,7 +407,7 @@ ind-agent/
   services/data-svc/        # Go: cmd/data-svc, internal/{auth,store,api}
   services/ai-svc/          # Python: src/copilot/..., tests/
   corpus/                   # versioned Markdown documents
-  eval/datasets/            # dev.jsonl, test.jsonl
+  eval/datasets/            # dev.jsonl, test.jsonl, holdout.jsonl (+ *.sha256)
   eval/reports/
   docs/architecture.md      # this document
   docs/plan.md              # milestone plan
@@ -386,7 +421,7 @@ ind-agent/
 | AI service | Python 3.12, FastAPI, pydantic v2, httpx, psycopg 3, numpy | Ecosystem for RAG/eval |
 | Data service | Go 1.25, `net/http`, pgx v5, golang-jwt v5 | Strong, simple boundary for tenancy and limits |
 | Storage | Postgres 16 + pgvector | One store for relational, FTS and vectors |
-| LLM | Ollama `qwen2.5:7b-instruct` (default), `llama3.2:3b-instruct` (fast) | Local-only; fit the hardware |
+| LLM | Ollama `qwen2.5:3b-instruct` (default), `qwen2.5:7b-instruct` (optional: better reports, ~4× slower) | Local-only; the default fits the 4 GB GPU |
 | Embeddings | `nomic-embed-text` (768-d) | Already installed; good quality for size |
-| Reranker | `BAAI/bge-reranker-base` (sentence-transformers, CPU) | Small enough for CPU |
+| Reranker | `BAAI/bge-reranker-base` (sentence-transformers, CPU; optional `rerank` dependency group) | Small enough for CPU |
 | Packaging | uv, Docker Compose | Reproducible setup on Windows |

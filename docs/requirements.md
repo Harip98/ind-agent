@@ -2,8 +2,8 @@
 
 What the copilot must do, how well, and how each requirement is checked. This document was
 written on 2026-10-18, after M0–M6, from the original brief, [architecture.md](architecture.md),
-[plan.md](plan.md) and the code. The **Status** column records what the tests and the evaluation
-show today, not what was intended.
+[plan.md](plan.md) and the code, and updated on 2026-10-24 after the release hardening. The **Status**
+column records what the tests and the evaluation show today, not what was intended.
 
 Related documents:
 - [use-cases.md](use-cases.md): who uses the copilot and the scenarios behind these requirements.
@@ -57,7 +57,7 @@ See [use-cases.md](use-cases.md#out-of-scope).
 
 | Term | Meaning |
 |---|---|
-| Tenant | One plant (`acme`, `globex`). Every user belongs to exactly one |
+| Tenant | One plant (`acme`, `globex`; `hollow` is used only by the holdout evaluation). Every user belongs to exactly one |
 | Event | Alarms on one asset raised within 2 h of the first alarm in the group |
 | Observation (O#) | A finding computed by code from the readings, with its values |
 | Candidate cause | A cause code from `signatures.yaml` whose required features hold, with a score and supporting O# |
@@ -89,7 +89,7 @@ See [use-cases.md](use-cases.md#out-of-scope).
 | FR-3 | The AI service shall call the data service with the caller's own token and hold no service-wide credential for operational data | I | Met |
 | FR-4 | An asset of another tenant shall be indistinguishable from an asset that does not exist: data-svc returns 404, and the copilot answers "I could not find that asset" | T, E | Met |
 | FR-5 | Document search shall return only shared documents and the caller's own tenant documents | T, E | Met |
-| FR-6 | The demo token endpoints (`/dev/defaults`, `/dev/token`) shall exist only when started with `copilot serve --dev`. They answer only loopback clients with a loopback `Host` header; otherwise they return 404 | T | Met |
+| FR-6 | The demo token endpoints (`/dev/defaults`, `/dev/token`) shall exist only when started with `copilot serve --dev` or `copilot serve --dev-docker`. `--dev` binds 127.0.0.1 and answers only loopback clients. `--dev-docker` is refused outside the ai-svc image, binds 0.0.0.0 and answers only loopback and the container's Docker gateway (the host's requests to the port published on 127.0.0.1). The image's default command has no dev mode. Both require a loopback `Host` header (else 400); any other client gets 404 | T | Met |
 
 ### 5.2 Understanding the question
 
@@ -162,21 +162,23 @@ See [use-cases.md](use-cases.md#out-of-scope).
 | ID | Requirement | Verify | Status |
 |---|---|---|---|
 | FR-36 | `POST /investigate` shall accept `{question, as_of?, mode?, strategy?, asset_id?, alarm_id?}` | T | Met |
-| FR-37 | The CLI shall offer the same investigation (`copilot ask`) plus the tooling commands: `migrate`, `simgen`, `ingest`, `search`, `devtoken`, `serve`, `eval-retrieval`, `eval-build`, `eval`, `eval-compare` | T, D | Met |
+| FR-37 | The CLI shall offer the same investigation (`copilot ask`) plus the tooling commands: `migrate`, `simgen`, `ingest`, `search`, `devtoken`, `serve`, `eval-retrieval`, `eval-build`, `eval`, `eval-llm-errors`, `eval-compare`, `bench` | T, D | Met |
 | FR-38 | Error mapping shall be: | T | Met |
 | | • invalid token: 401 | | |
 | | • invalid body: 422 | | |
+| | • `hybrid_rerank` requested without the optional `rerank` dependency group: 422 `strategy_unavailable` | | |
 | | • data-svc rate limit: 429 | | |
 | | • data-svc down: 503 `data_unavailable` | | |
+| | • knowledge base (Postgres) down: 503 `knowledge_base_unavailable` | | |
 | | • LLM down: 503 `llm_unavailable` | | |
 | | • otherwise: 500 | | |
-| | Each of these errors carries the trace id (the 422 comes from FastAPI validation and does not) | | |
+| | Each of these errors carries the trace id (the invalid-body 422 comes from FastAPI validation and does not) | | |
 
 ### 5.9 Data, corpus and evaluation tooling
 
 | ID | Requirement | Verify | Status |
 |---|---|---|---|
-| FR-39 | `simgen` shall produce two tenants, about 10 assets, about 30 days of 1-minute readings, injected faults, nuisance alarms and `ground_truth.jsonl`. Every row is marked `synthetic` | T | Met |
+| FR-39 | `simgen` shall produce three tenants (`acme`, `globex`, and the holdout-only `hollow`), 15 assets, about 30 days of 1-minute readings, 29 injected incidents (including overlapping incidents on one asset and two causes no signature describes), nuisance alarms and `ground_truth.jsonl`. Every row is marked `synthetic`. For the same seed, the core tenants' data and the dev/test splits do not change | T | Met |
 | FR-40 | `ingest` shall load versioned Markdown documents into sections and chunks with stable ids (e.g. `SOP-PUMP-07@v3#4.2`), with embeddings and full-text vectors. It is idempotent by SHA-256 | T | Met |
 | FR-41 | The evaluation harness shall score these metrics against ground truth with no LLM judge: | T, E | Met |
 | | • status | | |
@@ -230,7 +232,8 @@ See [use-cases.md](use-cases.md#out-of-scope).
 |---|---|---|---|
 | NFR-17 | When the LLM is unavailable, template mode shall keep working | T | Met |
 | NFR-18 | When data-svc is unavailable, the copilot shall return 503 with no partial report | T | Met |
-| NFR-19 | Timeouts: embeddings 60 s per call, LLM 240 s per call (configurable with `COPILOT_*`) | I | Met |
+| NFR-19 | Timeouts: query embeddings 15 s per call, then no embeddings for 30 s after a failure; ingest embeddings 60 s per call; LLM 240 s per call (configurable with `COPILOT_*`) | I, T | Met |
+| NFR-29 | `GET /readyz` shall report which modes can answer now: `ready` (every mode, hybrid retrieval); `degraded` when the LLM is missing (template mode only) or the embedding model is missing (every mode, keyword-only retrieval); `unavailable` with 503 when data-svc or the knowledge base is down | T | Met (`tests/test_api.py`) |
 
 ### 6.5 Observability
 
@@ -252,9 +255,9 @@ See [use-cases.md](use-cases.md#out-of-scope).
 | ID | Requirement | Verify | Status |
 |---|---|---|---|
 | NFR-25 | Setup on Windows shall be reproducible from the README: Docker Compose, uv, Go and Ollama | D | Met |
-| NFR-26 | Unit tests shall run without Docker or Ollama (fake LLM and fake data service); integration tests are marked separately | T | Met |
-| NFR-27 | The test split shall be frozen with its SHA-256 recorded and never used for tuning | I | Met |
-| NFR-28 | Tests shall run in continuous integration | I | Not met: no CI workflow yet; the repository has no remote |
+| NFR-26 | Unit tests shall run without Docker or Ollama (fake LLM and fake data service); integration tests are marked separately | T | Met (465 unit tests; 39 integration tests run with `-m integration`) |
+| NFR-27 | The test split shall be frozen with its SHA-256 recorded and never used for tuning | I | Met (the holdout split is frozen the same way) |
+| NFR-28 | Tests shall run in continuous integration | I | Met: `.github/workflows/ci.yml` runs on every push to `main` and every pull request: ruff, unit tests, migrations and integration tests against a pgvector service container, gofmt / `go vet` / `go test`, and the demo image build. The repository is on GitHub (github.com/Harip98/ind-agent) |
 
 ## 7. Acceptance
 
@@ -272,9 +275,7 @@ The prototype is accepted when all hard gates hold and the evaluation is reprodu
 
 | Item | Affects |
 |---|---|
-| Human review of the 172 generated questions | NFR-13, NFR-14 credibility |
+| Human review of the generated questions (172 dev/test, 81 holdout) | NFR-13, NFR-14 credibility |
 | Manual spot check of 20 answers | NFR-16 |
 | Weekday phrases and "the day before yesterday" in time parsing | FR-9 |
-| CI workflow once the GitHub remote exists | NFR-28 |
 | OIDC instead of the dev HS256 token | NFR-8 |
-| Optional: llm-mode run of the dev split with qwen2.5:3b | NFR-14 |

@@ -4,7 +4,7 @@ Status: approved, 2026-10-17. Design: [architecture.md](architecture.md).
 Detailed task-level plans per milestone live in [plans/](plans/).
 
 Each milestone ends with its exit criteria passing and a commit. Milestones are sequential;
-M6 is optional.
+M6 is optional; M7 was added after M6 to prepare the release.
 
 ## M0 — Foundations ✅ (2026-10-17)
 
@@ -93,6 +93,9 @@ Exit criteria
 
 ## M4 — Evaluation (✅ template 2026-10-17, LLM test split 2026-10-18; human review of questions and the 20-answer spot check pending)
 
+Open: human review of the generated questions (172 dev/test, plus the 81 holdout questions from M7) and the
+manual spot check of 20 answers. Every end-to-end evaluation report states that neither has been done.
+
 **Goal:** credible, reproducible numbers.
 
 Tasks
@@ -132,6 +135,32 @@ Tasks
 
 Exit criteria
 - Comparison report: accuracy, citation support, leakage, latency, failure modes.
+
+## M7 — Release hardening ✅ (2026-10-20 – 2026-10-24)
+
+Result: the 3B model's rejected drafts were classified and the writer and verifier fixed at the causes; a holdout plant covers what dev and test never had; every dependency failure has a defined status; the demo starts with one Docker command and CI runs on GitHub. The M4 human review of the questions and the 20-answer spot check are still open.
+
+**Goal:** a prototype that someone else can run, evaluate on unseen cases and operate.
+
+Tasks
+- LLM error analysis (`copilot eval-llm-errors`): schema caps so the decoder cannot loop until
+  `num_predict`, a tidy step that only removes text, identifiers (tags, ids, the alarm's date and time,
+  cited current sections) not read as numbers. Report: `eval/reports/2026-10-24-llm-error-analysis.md`.
+- Holdout split: a third, holdout-only plant (`hollow`) with causes the test split lacks, overlapping
+  faults, two faults no signature describes and unseen phrasings; `eval/datasets/holdout.jsonl`
+  (81 cases) frozen by `holdout.sha256`.
+- Operations: `GET /readyz`, a defined status for every dependency failure (`tests/test_failures.py`),
+  `copilot bench` (latency, errors, memory, recovery; writes `eval/reports/<date>-ops-metrics.md`).
+  See [deployment.md](deployment.md).
+- One-command Docker demo (`docker compose --profile demo up -d --build`); `serve --dev-docker` trusts
+  only the Docker gateway and is refused outside the image.
+- CI (`.github/workflows/ci.yml`) and the GitHub repository (github.com/Harip98/ind-agent).
+
+Exit criteria
+- dev and the frozen test split regenerate byte-identical with the holdout plant added.
+- No dependency failure produces a 500 or a hang.
+- CI runs lint, unit and integration tests, the Go checks and the image build on every push to `main`
+  and every pull request.
 
 ## Evaluation hard gates (all milestones)
 
