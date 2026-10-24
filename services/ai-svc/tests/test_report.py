@@ -171,6 +171,12 @@ def test_text_that_switches_language_is_rejected(ev, text):
     assert "explanation 1: write in English only; the text switches to another language" in verify(r, ev)
 
 
+def test_the_asset_model_is_a_name_not_a_number(ev):
+    r = _good()
+    r["explanations"][0]["text"] = "Cooling water return rose 10.2 degC, typical of CP-200 pumps."
+    assert verify(r, ev) == []
+
+
 def test_symbols_and_greek_letters_are_not_a_language_switch(ev):
     r = _good()
     r["explanations"][0]["text"] = "Cooling water return rose 10.2 degC (ΔT → 10.2 °C) above the norm."

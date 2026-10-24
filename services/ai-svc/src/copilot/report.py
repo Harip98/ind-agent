@@ -102,9 +102,9 @@ class Evidence:
 
     @property
     def names(self) -> list[str]:
-        """Names that contain digits but are not measurements: tags, asset and document ids. Longest first, so
-        TT-1011 is removed before TT-101."""
-        ids = {self.asset.id, self.alarm.tag, *(s.tag for s in self.asset.sensors),
+        """Names that contain digits but are not measurements: tags, the asset id and model (CP-200), document ids.
+        Longest first, so TT-1011 is removed before TT-101."""
+        ids = {self.asset.id, self.asset.model, self.alarm.tag, *(s.tag for s in self.asset.sensors),
                *(o.tag for o in self.observations if o.tag), *(d.hit.doc_id for d in self.docs)}
         return sorted(ids, key=len, reverse=True)
 
