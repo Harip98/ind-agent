@@ -88,7 +88,10 @@ MODELS: dict[str, AssetModel] = {m.code: m for m in (CP_200, CL_50, AC_75)}
 TENANTS: tuple[Tenant, ...] = (
     Tenant("acme", "Acme Process Plant", "Asia/Kolkata"),
     Tenant("globex", "Globex Utilities", "Europe/Berlin"),
+    Tenant("hollow", "Hollow Creek Water", "America/Chicago"),  # holdout evaluation only
 )
+# Tenants whose incidents form the frozen holdout split. Never used to build dev/test, never tuned on.
+HOLDOUT_TENANTS = frozenset({"hollow"})
 
 ASSETS: tuple[Asset, ...] = (
     Asset("acme", "P-10", "Pump 10", "CP-200", "Plant A"),
@@ -101,4 +104,10 @@ ASSETS: tuple[Asset, ...] = (
     Asset("globex", "CL-2", "Cooling Loop 2", "CL-50", "North Station"),
     Asset("globex", "AC-2", "Air Compressor 2", "AC-75", "North Station"),
     Asset("globex", "AC-3", "Air Compressor 3", "AC-75", "South Station"),
+    # appended last: the random stream draws assets in this order, so earlier series are unchanged
+    Asset("hollow", "P-30", "Pump 30", "CP-200", "Creek Plant"),
+    Asset("hollow", "P-31", "Pump 31", "CP-200", "Creek Plant"),
+    Asset("hollow", "P-32", "Pump 32", "CP-200", "Creek Plant"),
+    Asset("hollow", "CL-3", "Cooling Loop 3", "CL-50", "Creek Plant"),
+    Asset("hollow", "AC-4", "Air Compressor 4", "AC-75", "Creek Plant"),
 )

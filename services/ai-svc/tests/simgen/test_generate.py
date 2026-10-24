@@ -1,7 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from copilot.analysis import LONG_BEFORE, SHORT_AFTER
+from copilot.simgen.faults import RECOVERY_MINUTES
 from copilot.simgen.generate import generate
 
 END = datetime(2026, 10, 17, 8, 0, tzinfo=UTC)
@@ -26,10 +28,10 @@ def test_every_incident_raises_an_alarm_on_its_primary_tag(result):
         assert gt.primary_tag in tags, gt.incident_id
 
 
-def test_every_alarm_belongs_to_exactly_one_incident(result):
+def test_every_alarm_belongs_to_exactly_one_incident_or_one_combo(result):
     for alarm in result.alarms:
         owners = [
-            gt.incident_id
+            gt.combo or gt.incident_id
             for gt in result.ground_truth
             if any(
                 a["tag"] == alarm.tag and a["raised_at"] == alarm.raised_at.isoformat()
@@ -38,7 +40,7 @@ def test_every_alarm_belongs_to_exactly_one_incident(result):
             and gt.tenant_id == alarm.tenant_id
             and gt.asset_id == alarm.asset_id
         ]
-        assert len(owners) == 1, alarm
+        assert len(set(owners)) == 1, alarm
 
 
 def test_sensor_drift_alarms_only_on_the_drifting_tag(result):
@@ -72,3 +74,16 @@ def test_naive_end_rejected():
 def test_too_few_days_rejected():
     with pytest.raises(ValueError, match="outside the simulated window"):
         generate(END, days=5)
+
+
+def test_unrelated_incidents_on_one_asset_stay_out_of_each_others_analysis_window(result):
+    """Another fault inside an alarm's 48 h baseline would be an undeclared confounder in that case's evidence.
+    Only incidents that share a combo id overlap on purpose."""
+    recovery = timedelta(minutes=RECOVERY_MINUTES)
+    for a in result.ground_truth:
+        alarm = min(datetime.fromisoformat(x["raised_at"]) for x in a.alarms if x["tag"] == a.primary_tag)
+        lo, hi = alarm - LONG_BEFORE, alarm + SHORT_AFTER
+        for b in result.ground_truth:
+            if b is a or (b.tenant_id, b.asset_id) != (a.tenant_id, a.asset_id) or (a.combo and a.combo == b.combo):
+                continue
+            assert b.end + recovery < lo or b.start > hi, (a.incident_id, b.incident_id)

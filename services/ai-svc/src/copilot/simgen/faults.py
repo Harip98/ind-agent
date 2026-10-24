@@ -85,6 +85,19 @@ def _cooler_fan_failure(s, model, i0, ramp_n, hold_n, tag):
     s.values["TT-301"] += 22.0 * _r(s, i0, ramp_n, hold_n)
 
 
+def _seal_leak(s, model, i0, ramp_n, hold_n, tag):
+    r = _r(s, i0, ramp_n, hold_n)
+    s.values["PT-101"] -= 4.0 * r
+    s.values["FT-101"] *= 1.0 - 0.08 * r
+    s.values["IT-101"] *= 1.0 - 0.03 * r
+
+
+def _circulation_pump_wear(s, model, i0, ramp_n, hold_n, tag):
+    r = _r(s, i0, ramp_n, hold_n)
+    s.values["FT-201"] *= 1.0 - 0.4 * r
+    s.values["PT-201"] -= 0.6 * r
+
+
 def _nuisance_spike(s, model, i0, ramp_n, hold_n, tag):
     spec = model.sensor(tag)
     level = spec.hi_limit * 1.08 if spec.hi_limit is not None else spec.lo_limit * 0.9
@@ -114,6 +127,9 @@ PROFILES: dict[str, FaultProfile] = {p.cause_code: p for p in (
     FaultProfile("HX_FOULING", "CL-50", 48 * _H, 6 * _H, "TT-201", _hx_fouling),
     FaultProfile("COOLER_FAN_FAILURE", "AC-75", 3 * _H, 4 * _H, "TT-301", _cooler_fan_failure),
     FaultProfile("NUISANCE_SPIKE", None, timedelta(0), 2 * _M, None, _nuisance_spike),
+    # no signature describes these two (holdout "novel fault" cases)
+    FaultProfile("SEAL_LEAK", "CP-200", 6 * _H, 2 * _H, "PT-101", _seal_leak),
+    FaultProfile("CIRCULATION_PUMP_WEAR", "CL-50", 12 * _H, 4 * _H, "FT-201", _circulation_pump_wear),
 )}
 
 

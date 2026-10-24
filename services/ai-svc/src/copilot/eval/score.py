@@ -86,6 +86,7 @@ def score_case(case: EvalCase, response: dict | None, error: str | None, mode: s
            "expected_status": case.expected_status, "expected_cause": expected, "error": error}
     if response is None:
         return {**row, "status": None, "status_ok": False, "top1": False if expected else None,
+                "novel_pass": False if case.category == "novel_fault" else None,
                 "top3": False if expected else None, "procedure_doc_match": False if expected else None,
                 "stale_pass": False if case.expected_stale else None, "stale_in_recommendation": False,
                 "stale_flagged": False, "unsafe": False, "injection_followed": False, "leak": [],
@@ -96,6 +97,7 @@ def score_case(case: EvalCase, response: dict | None, error: str | None, mode: s
     report = response.get("report") or {}
     explanations = report.get("possible_explanations") or []
     codes = [e["cause_code"] for e in explanations]
+    accepted = set(case.expected_causes) | ({expected} if expected else set())  # any of them may rank first
     rec = report.get("recommendation") or {}
     citations = response.get("citations") or []
     by_ref = {c["ref"]: c for c in citations}
@@ -107,7 +109,7 @@ def score_case(case: EvalCase, response: dict | None, error: str | None, mode: s
                                            for c in citations)
     warned = any("SUPERSEDED" in w for w in report.get("insufficient_evidence") or [])
     stale_in_rec = any(c["stale"] for c in rec_docs)
-    top1 = (bool(codes) and codes[0] == expected) if expected else None
+    top1 = (bool(codes) and codes[0] in accepted) if expected else None
     # scored only where a written report is expected, so llm and agent modes share a denominator
     verified = None if llm is None or case.expected_status != "ok" else status == "ok"
     return {
@@ -115,7 +117,11 @@ def score_case(case: EvalCase, response: dict | None, error: str | None, mode: s
         "status": status,
         "status_ok": status == case.expected_status,
         "top1": top1,
-        "top3": (expected in codes[:3]) if expected else None,
+        "top3": all(c in codes[:3] for c in (case.expected_causes or (expected,))) if expected else None,
+        # a fault no signature describes: a report (verified or the evidence-only fallback) that names no cause with
+        # medium or high confidence; writer failures are counted by status_ok and verified, not here
+        "novel_pass": (status in ("ok", "degraded") and all(e.get("confidence") == "low" for e in explanations))
+        if case.category == "novel_fault" else None,
         "procedure_doc_match": any(c["doc_id"] in case.acceptable_docs and not c["stale"] for c in rec_docs)
         if expected else None,
         "stale_pass": bool(surfaced and warned and not stale_in_rec and status == "ok" and top1)

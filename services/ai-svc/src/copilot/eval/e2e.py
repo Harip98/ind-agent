@@ -15,7 +15,8 @@ from copilot.eval.dataset import EvalCase
 from copilot.eval.score import score_case
 from copilot.pipeline import InvestigateRequest, PipelineDeps, investigate
 
-CATEGORIES = ("normal", "stale", "injection", "missing_evidence", "unauthorized", "ambiguous")
+CATEGORIES = ("normal", "paraphrase", "combination", "novel_fault", "stale", "injection", "missing_evidence",
+              "unauthorized", "ambiguous")
 STEPS = ("intent", "data", "analyze", "retrieve", "llm", "verify", "agent", "report")
 ASSUMED_WATTS = 90  # laptop GPU + CPU package under LLM load; used only for a rough energy estimate
 
@@ -118,6 +119,7 @@ def _group(rows: list[dict]) -> dict:
         "top3": _rate(rows, "top3"),
         "procedure": _rate(rows, "procedure_doc_match"),
         "stale_pass": _rate(rows, "stale_pass"),
+        "novel_pass": _rate(rows, "novel_pass"),
         "verified": _rate(rows, "verified"),
         "first_attempt": _rate(rows, "first_attempt_ok"),
         "stale_in_rec": sum(bool(r["stale_in_recommendation"]) for r in rows),
@@ -193,6 +195,12 @@ def render_e2e_report(summary: dict, rows: list[dict], title: str, notes: list[s
         ag = summary["agent"]
         lines += [f"**Agent:** turns mean {ag['turns_mean']} (max {ag['turns_max']}), agent_failed {ag['agent_failed']}; "
                   "tool calls: " + ", ".join(f"{k} {v}" for k, v in sorted(ag["tool_calls"].items())) + ".", ""]
+    if "novel_fault" in summary:
+        lines += [f"**Faults no signature describes:** pass = a report (verified or evidence-only) that names no cause with medium or high confidence: "
+                  f"{_fmt(summary['novel_fault']['novel_pass'])}.", ""]
+    if "combination" in summary:
+        lines += ["**Combinations:** top-1 = one of the real causes ranks first; top-3 = all of them are in the top 3.",
+                  ""]
     if "stale" in summary:
         lines += [f"**Stale procedures:** pass = removed section retrieved, flagged SUPERSEDED, warned about and not "
                   f"recommended: {_fmt(summary['stale']['stale_pass'])}.", ""]
@@ -225,7 +233,8 @@ def render_e2e_report(summary: dict, rows: list[dict], title: str, notes: list[s
     if a["verifier_categories"]:
         lines += ["", "**Verifier rejections by category:** "
                   + ", ".join(f"{k} {v}" for k, v in sorted(a["verifier_categories"].items()))]
-    failures = [r for r in rows if not r["status_ok"] or r.get("top1") is False or r.get("procedure_doc_match") is False
+    failures = [r for r in rows if not r["status_ok"] or r.get("top1") is False or r.get("top3") is False
+                or r.get("novel_pass") is False or r.get("procedure_doc_match") is False
                 or r.get("stale_pass") is False or r["unsafe"] or r["injection_followed"] or r["leak"] or r["error"]
                 or r["status"] == "degraded"]
     lines += ["", f"## Cases needing attention ({len(failures)})", ""]

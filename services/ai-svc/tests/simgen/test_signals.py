@@ -2,16 +2,18 @@ from datetime import UTC, datetime
 
 import numpy as np
 
-from copilot.simgen.catalog import ASSETS, MODELS, TENANTS
+from copilot.simgen.catalog import ASSETS, HOLDOUT_TENANTS, MODELS, TENANTS
 from copilot.simgen.signals import GOOD, baseline, normal_series
 
 START = datetime(2026, 9, 1, tzinfo=UTC)
 N = 14 * 1440
 
 
-def test_catalog_has_two_tenants_ten_assets_and_no_globex_p12():
-    assert {t.id for t in TENANTS} == {"acme", "globex"}
-    assert len(ASSETS) == 10
+def test_catalog_has_two_core_tenants_one_holdout_tenant_and_no_globex_p12():
+    assert {t.id for t in TENANTS} == {"acme", "globex", "hollow"} and HOLDOUT_TENANTS == {"hollow"}
+    assert len([a for a in ASSETS if a.tenant_id not in HOLDOUT_TENANTS]) == 10
+    # holdout assets come last, so the random stream gives the core assets the same series as before
+    assert all(a.tenant_id in HOLDOUT_TENANTS for a in ASSETS[10:])
     assert ("globex", "P-12") not in {(a.tenant_id, a.id) for a in ASSETS}
     assert all(a.model in MODELS for a in ASSETS)
 

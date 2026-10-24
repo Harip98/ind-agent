@@ -23,9 +23,11 @@ class GroundTruth:
     peak: datetime
     end: datetime
     alarms: list[dict]  # {"tag", "alarm_type", "raised_at"} with ISO timestamps
+    combo: str | None = None
 
     def to_json(self) -> dict:
-        return {
+        extra = {"combo": self.combo} if self.combo else {}
+        return extra | {
             "incident_id": self.incident_id,
             "tenant_id": self.tenant_id,
             "asset_id": self.asset_id,
@@ -105,6 +107,7 @@ def generate(end: datetime, days: int = 30, seed: int = 7) -> SimResult:
             peak=t0 + profile.ramp,
             end=t_end,
             alarms=linked,
+            combo=inc.combo,
         ))
 
     return SimResult(start, end, TENANTS, ASSETS, series, alarms, ground_truth, seed)

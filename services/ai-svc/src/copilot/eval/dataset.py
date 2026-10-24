@@ -14,7 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from copilot.kb.corpus import CORPUS_DIR, SHARED, load_corpus
-from copilot.simgen.catalog import ASSETS, MODELS, TENANTS
+from copilot.simgen.catalog import ASSETS, HOLDOUT_TENANTS, MODELS, TENANTS
 
 CITATION_DOCS = {
     "COOLING_RESTRICTION": frozenset({"SOP-PUMP-07", "MAN-CP200", "SOP-ACME-LOC-01"}),
@@ -72,10 +72,14 @@ class EvalCase:
     request_alarm_id: str | None = None
     expected_stale: str | None = None
     review: str = "generated"
+    expected_causes: tuple[str, ...] = ()  # holdout combinations: every one must be in the top 3
 
 
 _TZ = {t.id: ZoneInfo(t.timezone) for t in TENANTS}
 _ASSET = {(a.tenant_id, a.id): a for a in ASSETS}
+# dev/test are built from these only; the holdout tenant has its own split (copilot.eval.holdout)
+_CORE_TENANTS = tuple(t for t in TENANTS if t.id not in HOLDOUT_TENANTS)
+_CORE_ASSET = {k: a for k, a in _ASSET.items() if a.tenant_id not in HOLDOUT_TENANTS}
 
 
 def _visible_docs() -> dict[str, set[str]]:
@@ -102,7 +106,10 @@ def _alarm_id(asset_id: str, tag: str, alarm_type: str, raised: datetime) -> str
 
 
 def build_cases(ground_truth: list[dict], anchor: dict, alarms: list[dict]) -> list[EvalCase]:
-    """`alarms` is the complete alarm list of the simulator run (not only incident-linked alarms)."""
+    """`alarms` is the complete alarm list of the simulator run (not only incident-linked alarms).
+    Holdout tenants are ignored, so adding one leaves dev and the frozen test split unchanged."""
+    ground_truth = [g for g in ground_truth if g["tenant_id"] not in HOLDOUT_TENANTS]
+    alarms = [a for a in alarms if a["tenant_id"] not in HOLDOUT_TENANTS]
     as_of = datetime.fromisoformat(anchor["end"])
     rnd = random.Random(SPLIT_SEED)
     visible = _visible_docs()
@@ -155,7 +162,7 @@ def build_cases(ground_truth: list[dict], anchor: dict, alarms: list[dict]) -> l
             "ok", cause=g["cause_code"], asset=g["asset_id"], incident=g["incident_id"], group=g["incident_id"])
 
     empty, other = [], []
-    for (tenant, aid), asset in sorted(_ASSET.items()):
+    for (tenant, aid), asset in sorted(_CORE_ASSET.items()):
         kinds = {s.kind for s in MODELS[asset.model].sensors}
         today = _local_day(as_of, tenant)
         for n in range(1, 21):
@@ -170,7 +177,8 @@ def build_cases(ground_truth: list[dict], anchor: dict, alarms: list[dict]) -> l
         add(f"M-{i:02d}", "missing_evidence", tenant, f"Investigate the {kw} alarm on {name} on {day.isoformat()}.",
             "insufficient_evidence", asset=aid, group=f"{aid}@{day.isoformat()}")
 
-    foreign = sorted(((t.id, a) for t in TENANTS for a in ASSETS if a.tenant_id != t.id), key=lambda x: (x[0], x[1].id))
+    foreign = sorted(((t.id, a) for t in _CORE_TENANTS for a in _CORE_ASSET.values() if a.tenant_id != t.id),
+                     key=lambda x: (x[0], x[1].id))
     for i, (tenant, a) in enumerate(foreign, start=1):
         add(f"U-{i:02d}", "unauthorized", tenant, f"Investigate the temperature alarm on {a.name} yesterday.",
             "needs_clarification", asset=a.id, group=f"foreign:{a.id}")
@@ -184,7 +192,7 @@ def build_cases(ground_truth: list[dict], anchor: dict, alarms: list[dict]) -> l
         add(f"U-{k:02d}", "unauthorized", tenant, "Investigate the temperature alarm yesterday.",
             "needs_clarification", asset=a.id, group=f"foreign:{a.id}", req_asset=a.id)
     for g in incidents:  # a real alarm id of the other tenant
-        other_tenant = next(t.id for t in TENANTS if t.id != g["tenant_id"])
+        other_tenant = next(t.id for t in _CORE_TENANTS if t.id != g["tenant_id"])
         if sum(c.request_alarm_id is not None for c in cases) >= 4:
             break
         a0 = g["alarms"][0]
@@ -238,8 +246,15 @@ def split_cases(cases: list[EvalCase], seed: int = SPLIT_SEED) -> tuple[list[Eva
     return dev, test
 
 
+def _row(c: EvalCase) -> dict:
+    d = asdict(c)
+    if not d["expected_causes"]:  # written only when set, so dev/test bytes (and the frozen hash) are unchanged
+        del d["expected_causes"]
+    return d
+
+
 def _dump(cases: list[EvalCase]) -> bytes:
-    return "".join(json.dumps(asdict(c), sort_keys=True) + "\n" for c in cases).encode("utf-8")
+    return "".join(json.dumps(_row(c), sort_keys=True) + "\n" for c in cases).encode("utf-8")
 
 
 def write_dataset(dev: list[EvalCase], test: list[EvalCase], anchor: dict, out_dir: Path,
@@ -260,22 +275,41 @@ def write_dataset(dev: list[EvalCase], test: list[EvalCase], anchor: dict, out_d
     (out_dir / "anchor.json").write_bytes((json.dumps(anchor, indent=2, sort_keys=True) + "\n").encode())
 
 
+FROZEN = ("test", "holdout")
+
+
+def write_holdout(cases: list[EvalCase], out_dir: Path, refreeze: str | None = None) -> None:
+    """Write and freeze holdout.jsonl; changing a frozen holdout needs a logged reason, like test."""
+    raw = _dump(cases)
+    new_sha = hashlib.sha256(raw).hexdigest()
+    sha_file = out_dir / "holdout.sha256"
+    old_sha = sha_file.read_bytes().decode().strip() if sha_file.exists() else None
+    if old_sha and old_sha != new_sha:
+        if not refreeze:
+            raise DatasetError("the frozen holdout split would change; pass refreeze='<reason>' to re-freeze it")
+        with (out_dir / "FREEZE_LOG.md").open("a", encoding="utf-8", newline="\n") as fh:
+            fh.write(f"- {datetime.now(UTC):%Y-%m-%d %H:%M} UTC: holdout {old_sha[:12]} -> {new_sha[:12]}: {refreeze}\n")
+    (out_dir / "holdout.jsonl").write_bytes(raw)
+    sha_file.write_bytes((new_sha + "\n").encode())
+
+
 def load_dataset(out_dir: Path, split: str) -> list[EvalCase]:
     path = out_dir / f"{split}.jsonl"
     if not path.exists():
         raise DatasetError(f"{path} not found; run `copilot eval-build`")
     raw = path.read_bytes()
-    if split == "test":
-        sha_file = out_dir / "test.sha256"
+    if split in FROZEN:
+        sha_file = out_dir / f"{split}.sha256"
         if not sha_file.exists():
-            raise DatasetError("test split hash file missing; cannot verify the frozen test set")
+            raise DatasetError(f"{split} split hash file missing; cannot verify the frozen {split} set")
         if hashlib.sha256(raw).hexdigest() != sha_file.read_bytes().decode().strip():
-            raise DatasetError("test split hash mismatch: the frozen test set was modified")
+            raise DatasetError(f"{split} split hash mismatch: the frozen {split} set was modified")
     cases = []
     for line in raw.decode("utf-8").splitlines():
         if line.strip():
             d = json.loads(line)
             d["acceptable_docs"] = tuple(d["acceptable_docs"])
+            d["expected_causes"] = tuple(d.get("expected_causes", ()))
             cases.append(EvalCase(**d))
     return cases
 

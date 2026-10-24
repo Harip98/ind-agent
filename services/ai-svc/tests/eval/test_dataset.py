@@ -6,7 +6,11 @@ import pytest
 
 from copilot.config import REPO_ROOT
 from copilot.eval.dataset import (
-    DatasetError, build_cases, load_dataset, split_cases, write_dataset,
+    DatasetError,
+    build_cases,
+    load_dataset,
+    split_cases,
+    write_dataset,
 )
 from copilot.kb.corpus import CORPUS_DIR, SHARED, load_corpus
 from copilot.simgen.catalog import ASSETS
@@ -73,7 +77,7 @@ def test_missing_evidence_includes_days_with_other_alarms(cases, inputs):
     from zoneinfo import ZoneInfo
     tz = {"acme": ZoneInfo("Asia/Kolkata"), "globex": ZoneInfo("Europe/Berlin")}
     busy = {(a["tenant_id"], a["asset_id"], datetime.fromisoformat(a["raised_at"]).astimezone(tz[a["tenant_id"]]).date().isoformat())
-            for a in alarms}
+            for a in alarms if a["tenant_id"] in tz}
     missing = [c for c in cases if c.category == "missing_evidence"]
     with_other = [c for c in missing if (c.tenant, c.asset_id, c.question[-11:-1]) in busy]
     assert len(with_other) >= 8
@@ -121,3 +125,10 @@ def test_repo_dataset_matches_generator(cases, inputs):
     assert json.loads((d / "anchor.json").read_text(encoding="utf-8")) == inputs[1]
     dev, test = split_cases(cases)
     assert load_dataset(d, "test") == test and load_dataset(d, "dev") == dev
+
+
+def test_repo_holdout_matches_generator(inputs):
+    """The committed holdout split is what the generator produces from the anchored run, and its hash matches."""
+    from copilot.eval.holdout import build_holdout
+
+    assert load_dataset(REPO_ROOT / "eval" / "datasets", "holdout") == build_holdout(*inputs)
