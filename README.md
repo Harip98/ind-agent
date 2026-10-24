@@ -16,9 +16,9 @@ When an alarm goes off in a plant, an engineer gathers the alarm history, the se
 
 ## At a glance
 
-- **Code drives, the model writes.** The same 3B model was also left to run the investigation itself (agent mode). It reached the correct outcome on **10 of 60** held-out questions; the code-driven pipeline reached **59 of 60**. That measurement is why the pipeline is the design.
-- **Error analysis that paid off.** Classifying every rejected draft showed most failures were formatting, not facts. After the fixes, the same model on the same frozen questions went from **45/60 to 59/60** correct, and from 27/42 to **41/42** reports passing the verifier, at half the latency.
-- **A plant it was never tuned on:** **75/81** with the language model and 81/81 in evidence-only mode, including overlapping faults and faults no rule describes.
+- **Code drives, the model writes.** The same 3B model was also left to run the investigation itself (agent mode). It reached the correct outcome on **10 of 60** held-out questions; the code-driven pipeline reached **58 of 60**. That measurement is why the pipeline is the design.
+- **Error analysis that paid off.** Classifying every rejected draft showed most failures were formatting, not facts. After the fixes, the same model on the same frozen questions went from **45/60 to 58/60** correct, and from 27/42 to **40/42** reports passing the verifier, at under half the latency.
+- **A plant it was never tuned on:** **76/81** with the language model and 81/81 in evidence-only mode, including overlapping faults and faults no rule describes.
 - **0** cross-tenant leaks, **0** unsafe recommendations and **0** followed prompt injections, in every mode and every run.
 
 ## What this project demonstrates
@@ -29,7 +29,7 @@ When an alarm goes off in a plant, an engineer gathers the alarm history, the se
 | Structured output | The model fills a JSON schema whose citation and cause fields are enums, with length caps. Constrained decoding therefore cannot produce a reference or cause that does not exist, or loop until the output is cut off |
 | Guardrails | A deterministic verifier checks every citation and number, blocks advice to bypass or disable trips, interlocks or alarms, and rejects text that drifts into another language. After two failed drafts, the user gets an evidence-only report flagged `degraded` |
 | Evaluation | A SHA-256-locked test split, a separate frozen holdout plant, deterministic scoring with no LLM judge, and Wilson 95% intervals. An error analysis of rejected drafts drove measured fixes |
-| Agents, and when not to use one | A tool-calling agent mode (7 read-only tools), built and measured against the pipeline: 10/60 vs 59/60 correct outcomes at 5.8× the tokens |
+| Agents, and when not to use one | A tool-calling agent mode (7 read-only tools), built and measured against the pipeline: 10/60 vs 58/60 correct outcomes at 5.4× the tokens |
 | LLMOps | Local models on a 4 GB GPU, a readiness probe (`/readyz`), a defined status for every dependency failure, per-request JSON logs with step latency and tokens, CI, and a one-command Docker demo |
 | AI security | The tenant comes only from the verified JWT. Postgres runs with `FORCE ROW LEVEL SECURITY`, the corpus contains a planted prompt injection, and the report writer never sees the user's free text |
 
@@ -135,27 +135,27 @@ Scenarios: [docs/use-cases.md](docs/use-cases.md). Every requirement with its ve
 
 ## Results
 
-The frozen test split has 60 questions from 5 incidents. It also includes missing-evidence, stale-procedure, other-plant, ambiguous and prompt-injection cases. Its SHA-256 is recorded and it was never used for tuning; tuning used a separate dev split of 112 questions. Scoring is deterministic (status, cause codes, cited documents), with no LLM judge. All runs below: 2026-10-24, commit `8c699de`.
+The frozen test split has 60 questions from 5 incidents. It also includes missing-evidence, stale-procedure, other-plant, ambiguous and prompt-injection cases. Its SHA-256 is recorded and it was never used for tuning; tuning used a separate dev split of 112 questions. Scoring is deterministic (status, cause codes, cited documents), with no LLM judge. Pipeline: 2026-10-25, commit `33b3102`. Evidence only and agent: 2026-10-24, commit `8c699de`; later commits changed only the writer's prompt and two verifier rules.
 
 | Test split (60 questions) | Evidence only | Pipeline, qwen2.5:3b (default) | Agent, qwen2.5:3b |
 |---|---|---|---|
-| Correct outcome | 60/60 | **59/60** | 10/60 |
+| Correct outcome | 60/60 | **58/60** | 10/60 |
 | Top-1 root cause | 42/42 | 42/42 | 35/42 |
 | Right procedure document | 42/42 | 42/42 | 25/42 |
 | Superseded procedure handled | 8/8 | 7/8 | 0/8 |
-| Written report passed the verifier | – | 41/42 | 2/42 |
-| Fell back to the evidence-only report | 0 | 1 | 37 |
+| Written report passed the verifier | – | 40/42 | 2/42 |
+| Fell back to the evidence-only report | 0 | 2 | 37 |
 | Leaks / unsafe advice / injection followed | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
-| p50 latency, full investigation | 1.1 s | 5.2 s | 12.6 s |
-| Tokens per investigation | – | 1,626 | 9,461 |
+| p50 latency, full investigation | 1.1 s | 4.8 s | 12.6 s |
+| Tokens per investigation | – | 1,739 | 9,461 |
 
-Reports: [evidence only](eval/reports/e2e-test-template-v2.md) · [pipeline](eval/reports/e2e-test-llm-v2.md) · [agent](eval/reports/e2e-test-agent-v2.md).
+Reports: [evidence only](eval/reports/e2e-test-template-v2.md) · [pipeline](eval/reports/e2e-test-llm-v3.md) · [agent](eval/reports/e2e-test-agent-v2.md). The same pipeline on commit `8c699de`, before the English-only rule, scored 59/60 and 41/42 ([report](eval/reports/e2e-test-llm-v2.md)): repeated runs differ by one or two reports.
 
 - In the pipeline, code ranks the causes, so the pipeline's top-1 score does not measure the model. The verifier row does.
 - Evidence-only mode never passes document text to a model, so its injection result is 0 by construction.
 - `qwen2.5:7b-instruct` scored 53/60 before the fixes ([report](eval/reports/e2e-test-llm-qwen7b.md)). It was not re-run: it does not fit in 4 GB and spills into system RAM.
 
-**Why not an agent?** With the same 3B model, the agent loop reached the right outcome in 10 of 60 cases, against 59 for the pipeline. It had 7 read-only tools, at most 6 turns and the same verifier, which accepted only 2 of its 80 report submissions. Tool-call arguments have no schema constraint, so the agent copied numbers without citing them, cited alarms as evidence and invented cause codes. Asked about an asset its plant does not have, it sometimes answered about a different one. Its single generic search also missed procedures that the pipeline's targeted query finds. The first comparison (8/60 vs 45/60, before the writer fixes) is written up in [agent vs pipeline](eval/reports/2026-10-18-agent-vs-pipeline.md). Agent mode stays in the code (`mode=agent`) as a benchmark for stronger models.
+**Why not an agent?** With the same 3B model, the agent loop reached the right outcome in 10 of 60 cases, against 58 for the pipeline. It had 7 read-only tools, at most 6 turns and the same verifier, which accepted only 2 of its 80 report submissions. Tool-call arguments have no schema constraint, so the agent copied numbers without citing them, cited alarms as evidence and invented cause codes. Asked about an asset its plant does not have, it sometimes answered about a different one. Its single generic search also missed procedures that the pipeline's targeted query finds. The first comparison (8/60 vs 45/60, before the writer fixes) is written up in [agent vs pipeline](eval/reports/2026-10-18-agent-vs-pipeline.md). Agent mode stays in the code (`mode=agent`) as a benchmark for stronger models.
 
 **What the error analysis changed.** About three quarters of the rejected drafts of the first 3B run failed on formatting or on a verifier false positive, not on wrong facts ([analysis](eval/reports/2026-10-24-llm-error-analysis.md)):
 
@@ -165,27 +165,27 @@ Reports: [evidence only](eval/reports/e2e-test-template-v2.md) · [pipeline](eva
 
 The fixes were schema length caps and enum-restricted references (constrained decoding cannot loop or misplace a citation), a tidy step that only deletes text, and identifier rules for tags, document ids, cited section numbers and the alarm's date and time. Two adversarial reviews then tightened the identifier rules so they cannot excuse an invented value. Same model, same 60 frozen questions:
 
-| Pipeline, qwen2.5:3b | Before (2026-10-18) | After (2026-10-24) |
+| Pipeline, qwen2.5:3b | Before (2026-10-18) | After (2026-10-25) |
 |---|---|---|
-| Correct outcome | 45/60 | **59/60** |
-| Written report passed the verifier | 27/42 | **41/42** |
-| Passed on the first attempt | 12/42 | **40/42** |
+| Correct outcome | 45/60 | **58/60** |
+| Written report passed the verifier | 27/42 | **40/42** |
+| Passed on the first attempt | 12/42 | **37/42** |
 | Superseded procedure handled | 4/8 | 7/8 |
-| p50 latency, full investigation | 11.4 s | 5.2 s |
-| Verifier rejection messages | 78 | 3 |
+| p50 latency, full investigation | 11.4 s | 4.8 s |
+| Verifier rejection messages | 78 | 11 |
 
 **Holdout plant.** A third plant exists only in a frozen holdout split of 81 questions covering 11 incidents and 7 root causes. It includes causes the test split never had, overlapping faults, faults no signature describes and question phrasings the rules were not written for. The code was not tuned on it.
 
 | Holdout split (81 questions) | Evidence only | Pipeline, qwen2.5:3b |
 |---|---|---|
-| Known phrasings · unseen phrasings | 18/18 · 18/18 | 15/18 · 17/18 |
+| Known phrasings · unseen phrasings | 18/18 · 18/18 | 16/18 · 16/18 |
 | Overlapping faults (every real cause in the top 3) | 12/12 | 12/12 |
 | Faults no signature describes (no cause named with medium or high confidence) | 8/8 | 8/8 |
-| Stale procedures | 4/4 | 3/4 |
+| Stale procedures | 4/4 | 4/4 |
 | Missing evidence · other plant · ambiguous · injection | 6/6 · 8/8 · 4/4 · 3/3 | 6/6 · 8/8 · 4/4 · 2/3 |
-| **All** | **81/81** | **75/81** |
+| **All** | **81/81** | **76/81** |
 
-Five of the six pipeline misses are one incident: the model copied the fault-signature match scores (1.00, 0.67) from its prompt into the text as if they were measurements, and the verifier rejected them. The holdout plant uses the same simulator and the same author, so it shows that the rules carry over to a new plant, new assets and new phrasings, not to real plant data. Reports: [evidence only](eval/reports/e2e-holdout-template.md) · [pipeline](eval/reports/e2e-holdout-llm.md).
+Three of the five pipeline misses are one incident: the model copied the fault-signature match scores (1.00, 0.67) from its prompt into the text as if they were measurements, and the verifier rejected them. The other two cite a number from the wrong source. The holdout plant uses the same simulator and the same author, so it shows that the rules carry over to a new plant, new assets and new phrasings, not to real plant data. Reports: [evidence only](eval/reports/e2e-holdout-template.md) · [pipeline](eval/reports/e2e-holdout-llm-v2.md).
 
 **Retrieval.** Hybrid search on 43 labelled queries: recall@5 = 1.00, MRR 0.89, p95 104 ms, 0 cross-tenant leaks. An optional CPU cross-encoder raises MRR to 0.92 but takes about 3.5 s per query, so it is opt-in ([report](eval/reports/2026-10-17-retrieval.md)).
 
@@ -194,7 +194,7 @@ Five of the six pipeline misses are one incident: the model copied the fault-sig
 - **Synthetic data.** Telemetry, alarms and incidents come from a simulator, and the procedures are self-authored. None of this has been run against a real plant.
 - **One author.** The same person wrote the simulator faults, the fault signatures, the corpus and the questions. Nobody else has reviewed the questions. The effective sample size is the number of incidents (5 in test, 11 in holdout), so the intervals are optimistic.
 - **Rule-based diagnosis.** Causes come from `signatures.yaml`. For a fault with no signature, the report says the readings match no known signature; it does not diagnose the fault.
-- **A small model.** qwen2.5:3b fits on the 4 GB GPU and now writes a verifiable report 41 of 42 times on the test split and 57 of 63 on the holdout; the rest fall back to the evidence-only report. Each mode was run once, at temperature 0; GPU decoding is not bit-exact, and repeated runs differ by one or two reports.
+- **A small model.** qwen2.5:3b fits on the 4 GB GPU and now writes a verifiable report 40 of 42 times on the test split and 58 of 63 on the holdout; the rest fall back to the evidence-only report. Each mode was run once, at temperature 0; GPU decoding is not bit-exact, and repeated runs differ by one or two reports.
 - **Prototype identity and parsing.** HS256 dev tokens with a shared secret stand in for a real identity provider (OIDC). Time parsing does not understand weekday names such as "last Tuesday".
 
 ## Quick start

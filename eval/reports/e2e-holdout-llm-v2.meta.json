@@ -1,0 +1,9 @@
+{
+  "code": "33b3102",
+  "corpus": "429a5803dcd317cc",
+  "dataset": "5a446bde126b24ad",
+  "mode": "llm",
+  "model": "qwen2.5:3b-instruct",
+  "signatures": "3203e672424f2655",
+  "strategy": "hybrid"
+}

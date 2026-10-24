@@ -6,7 +6,9 @@ the user got the evidence-only fallback. Were the drafts wrong, or was something
 
 **Answer.** Mostly something else. About three quarters of the failed attempts were formatting failures or verifier
 false positives, not wrong content. After fixing those, the same model on the same frozen test questions reached the
-expected outcome in **59 of 60** cases, and **41 of 42** written reports passed the verifier.
+expected outcome in **59 of 60** cases, and **41 of 42** written reports passed the verifier. On the final code, which
+also tells the writer to use English only, a fresh run gave 58/60 and 40/42 ([e2e-test-llm-v3.md](e2e-test-llm-v3.md)),
+within the run-to-run variation described below.
 
 ## Method
 
@@ -92,10 +94,13 @@ at temperature 0, so repeated runs of these 42 and 70 cases differ by one or two
 
 **Language switching.** Two accepted dev drafts in the earlier run, and one report seen live in the UI, switched
 script mid-sentence ("... provide the 证据."). None of the evaluated test or holdout reports did. The verifier now
-rejects such text, so the retry or the evidence-only fallback answers instead.
+rejects such text, so the retry or the evidence-only fallback answers instead. On the demo alarm in the UI (Pump 12)
+the 3B switched language on its first draft every time, so the final code also tells the writer to write in English
+only; that alarm now verifies on the first attempt.
 
 On the holdout plant, which no fix was tuned on ([e2e-holdout-llm.md](e2e-holdout-llm.md)): 75/81 expected outcomes,
-57/63 written reports verified. Five of the six misses are one incident, where the model copied the fault-signature
+57/63 written reports verified (76/81 and 58/63 on the final code, [e2e-holdout-llm-v2.md](e2e-holdout-llm-v2.md)).
+Five of the six misses in the first run are one incident, where the model copied the fault-signature
 match scores (1.00, 0.67) from its prompt into the text as if they were measurements. The verifier was right to reject
 them; leaving the scores out of the writer's prompt is the obvious next fix.
 

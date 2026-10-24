@@ -20,7 +20,7 @@ about 0.3 GB, and data-svc and Postgres use tens of MiB each.
 
 | Model | VRAM | Full investigation p50 / p95 (test split) |
 |---|---|---|
-| `qwen2.5:3b-instruct` (default) | about 2.0 GB | about 5.2 s / 9.9 s |
+| `qwen2.5:3b-instruct` (default) | about 2.0 GB | about 4.8 s / 8.4 s |
 | `qwen2.5:7b-instruct` | does not fit 4 GB; partly in RAM | about 49 s / 126 s (measured before the 2026-10-24 writer fixes) |
 | none (`mode=template`) | 0 | about 1.1 s / 1.6 s |
 
