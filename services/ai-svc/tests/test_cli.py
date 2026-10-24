@@ -38,12 +38,49 @@ def test_eval_compare_reads_saved_rows(tmp_path):
     assert "| Metric | template | llm |" in result.output and "agent: no results" in result.output
 
 
+def test_eval_compare_summarizes_a_tagged_run_by_its_base_mode(monkeypatch, tmp_path):
+    import copilot.eval.e2e as e2e
+
+    seen = []
+    monkeypatch.setattr(e2e, "load_rows", lambda path: [{"id": "x"}])
+    monkeypatch.setattr(e2e, "summarize", lambda rows, mode: seen.append(mode) or {})
+    monkeypatch.setattr(e2e, "render_comparison", lambda summaries: "table")
+    result = CliRunner().invoke(app, ["eval-compare", "--modes", "llm-qwen7b,agent-v2", "--reports-dir", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert seen == ["llm", "agent"]
+
+
+def _flat(output: str) -> str:
+    """CLI error text without the box rich draws around it, so a wrapped message reads as one line."""
+    return " ".join(output.replace("│", " ").split())
+
+
+def test_dev_docker_is_refused_outside_the_image(monkeypatch):
+    from pathlib import Path
+
+    from copilot.cli import in_container
+
+    monkeypatch.delenv("COPILOT_CONTAINER", raising=False)
+    result = CliRunner().invoke(app, ["serve", "--dev-docker"])
+    assert result.exit_code == 2 and "only runs inside the ai-svc image" in _flat(result.output)
+    monkeypatch.setenv("COPILOT_CONTAINER", "1")
+    monkeypatch.setattr(Path, "exists", lambda self: False)
+    assert not in_container()  # the image's env flag alone is not enough without the runtime's marker file
+    monkeypatch.setattr(Path, "exists", lambda self: str(self).replace("\\", "/") == "/.dockerenv")
+    assert in_container()
+
+
+def test_dev_docker_does_not_take_a_host():
+    result = CliRunner().invoke(app, ["serve", "--dev-docker", "--host", "127.0.0.1"])
+    assert result.exit_code == 2 and "always binds 0.0.0.0" in _flat(result.output)
+
+
 def test_ask_prints_a_failed_agent_run(monkeypatch):
     from datetime import UTC, datetime
 
-    import copilot.api
     from test_pipeline import make_deps
 
+    import copilot.api
     from copilot.llm import FakeToolLLM
     from copilot.simgen.generate import generate
 

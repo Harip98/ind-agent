@@ -1,5 +1,6 @@
 """`copilot` command-line entry point."""
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,8 +41,8 @@ def simgen(
 
     try:
         end_dt = datetime.fromisoformat(end) if end else datetime.now(UTC)
-    except ValueError:
-        raise typer.BadParameter("must be ISO-8601, e.g. 2026-10-17T08:00+00:00", param_hint="--end")
+    except ValueError as exc:
+        raise typer.BadParameter("must be ISO-8601, e.g. 2026-10-17T08:00+00:00", param_hint="--end") from exc
     if end_dt.tzinfo is None:
         raise typer.BadParameter("must include a timezone offset, e.g. 2026-10-17T08:00+00:00",
                                  param_hint="--end")
@@ -102,11 +103,11 @@ def _retriever(settings, fake_embeddings: bool = False):
     from copilot.kb.embed import HashEmbedder, OllamaEmbedder
     from copilot.ollama import OllamaClient
     from copilot.retrieval import Retriever
-    from copilot.retrieval.rerank import CrossEncoderReranker
+    from copilot.retrieval.rerank import optional_reranker
 
     embedder = HashEmbedder() if fake_embeddings else OllamaEmbedder(
         OllamaClient(settings.ollama_url, settings.ollama_timeout_s), settings.embed_model)
-    return Retriever(settings, embedder, CrossEncoderReranker(settings.reranker_model))
+    return Retriever(settings, embedder, optional_reranker(settings.reranker_model))
 
 
 @app.command()
@@ -133,8 +134,12 @@ def eval_retrieval(
 
     from copilot.eval.retrieval_eval import REPO_DATASET, load_cases, render_report, run
     from copilot.retrieval import STRATEGIES
+    from copilot.retrieval.rerank import optional_reranker
 
     strategies = list(STRATEGIES) if strategy == "all" else [strategy]
+    if strategy == "all" and optional_reranker("") is None:
+        strategies.remove("hybrid_rerank")
+        typer.echo("hybrid_rerank skipped: the optional `rerank` group is not installed (uv sync --group rerank)")
     results = run(load_cases(REPO_DATASET), _retriever(get_settings()), strategies)
     out = REPO_ROOT / "eval" / "reports" / f"{date.today().isoformat()}-retrieval"
     report = render_report(results, f"Retrieval evaluation — {date.today().isoformat()}")
@@ -146,20 +151,37 @@ def eval_retrieval(
         raise typer.Exit(1)
 
 
+def in_container() -> bool:
+    """True only inside the ai-svc image: it sets COPILOT_CONTAINER=1, and the runtime creates its marker file."""
+    markers = (Path("/.dockerenv"), Path("/run/.containerenv"))
+    return os.environ.get("COPILOT_CONTAINER") == "1" and any(m.exists() for m in markers)
+
+
 @app.command()
 def serve(
-    host: str = "127.0.0.1",
+    host: str | None = typer.Option(None, help="Bind address (default 127.0.0.1)."),
     port: int = 8000,
     dev: bool = typer.Option(False, "--dev", help="Enable demo token minting (/dev/token). Local demos only."),
+    dev_docker: bool = typer.Option(False, "--dev-docker", help="--dev inside the demo container: binds 0.0.0.0 "
+                                    "and trusts the Docker gateway. Refused outside the image; publish the port "
+                                    "on 127.0.0.1 only."),
 ) -> None:
     """Run the HTTP API (POST /investigate) and the web UI (GET /)."""
     import uvicorn
 
     from copilot.api import create_app
 
-    if dev and host not in ("127.0.0.1", "localhost"):
+    if dev_docker:
+        if host is not None:
+            raise typer.BadParameter("--dev-docker always binds 0.0.0.0 inside the container", param_hint="--host")
+        if not in_container():
+            raise typer.BadParameter("--dev-docker only runs inside the ai-svc image; use --dev on a host",
+                                     param_hint="--dev-docker")
+        dev, host = True, "0.0.0.0"
+    host = host or "127.0.0.1"
+    if dev and not dev_docker and host not in ("127.0.0.1", "localhost"):
         raise typer.BadParameter("--dev only binds to 127.0.0.1", param_hint="--host")
-    uvicorn.run(create_app(dev=dev), host=host, port=port)
+    uvicorn.run(create_app(dev=dev, dev_docker=dev_docker), host=host, port=port)
 
 
 def _default_as_of():
@@ -231,13 +253,14 @@ def ask(
 
 @app.command("eval-build")
 def eval_build(
-    refreeze: str | None = typer.Option(None, help="Reason for changing the frozen test split (logged)."),
+    refreeze: str | None = typer.Option(None, help="Reason for changing a frozen split (logged)."),
 ) -> None:
-    """Generate eval/datasets/{dev,test}.jsonl from the anchored simulator run (data/simgen_run.json)."""
+    """Generate eval/datasets/{dev,test,holdout}.jsonl from the anchored simulator run (data/simgen_run.json)."""
     import json
     from datetime import datetime
 
-    from copilot.eval.dataset import DatasetError, build_cases, split_cases, write_dataset
+    from copilot.eval.dataset import DatasetError, build_cases, split_cases, write_dataset, write_holdout
+    from copilot.eval.holdout import build_holdout
     from copilot.simgen.generate import generate
 
     meta = json.loads((REPO_ROOT / "data" / "simgen_run.json").read_text(encoding="utf-8"))
@@ -251,11 +274,14 @@ def eval_build(
     alarms = [{"tenant_id": a.tenant_id, "asset_id": a.asset_id, "tag": a.tag, "alarm_type": a.alarm_type,
                "raised_at": a.raised_at.isoformat()} for a in sim.alarms]
     dev, test = split_cases(build_cases(gt, anchor, alarms))
+    holdout = build_holdout(gt, anchor, alarms)
     try:
         write_dataset(dev, test, anchor, REPO_ROOT / "eval" / "datasets", refreeze=refreeze)
+        write_holdout(holdout, REPO_ROOT / "eval" / "datasets", refreeze=refreeze)
     except DatasetError as exc:
         raise typer.BadParameter(str(exc), param_hint="--refreeze") from exc
-    typer.echo(f"dev {len(dev)}, test {len(test)} cases -> eval/datasets (anchor {anchor['end']}, seed {anchor['seed']})")
+    typer.echo(f"dev {len(dev)}, test {len(test)}, holdout {len(holdout)} cases -> eval/datasets "
+               f"(anchor {anchor['end']}, seed {anchor['seed']})")
 
 
 EVAL_NOTES = [
@@ -309,11 +335,12 @@ def _fingerprint(split: str, mode: str, settings) -> dict:
 
 @app.command("eval")
 def eval_e2e(
-    split: str = typer.Option("dev", help="dev | test"),
+    split: str = typer.Option("dev", help="dev | test | holdout"),
     mode: str = typer.Option("template", help="template | llm | agent"),
     limit: int | None = typer.Option(None, help="Run at most N new cases (resumable)."),
     fresh: bool = typer.Option(False, help="Discard earlier results for this split and mode."),
     retry_errors: bool = typer.Option(False, help="Re-run cases whose earlier attempt ended in an error."),
+    tag: str | None = typer.Option(None, help="Suffix for the output name, e.g. 'v2' -> e2e-test-llm-v2.jsonl."),
 ) -> None:
     """Run the end-to-end evaluation against the live stack and write eval/reports/e2e-<split>-<mode>.{jsonl,md}."""
     from datetime import date
@@ -323,13 +350,13 @@ def eval_e2e(
     from copilot.eval.dataset import check_anchor, load_dataset
     from copilot.eval.e2e import EvalStateError, render_e2e_report, run_cases, summarize
 
-    if split not in ("dev", "test") or mode not in ("template", "llm", "agent"):
-        raise typer.BadParameter("split must be dev|test and mode template|llm|agent")
+    if split not in ("dev", "test", "holdout") or mode not in ("template", "llm", "agent"):
+        raise typer.BadParameter("split must be dev|test|holdout and mode template|llm|agent")
     datasets = REPO_ROOT / "eval" / "datasets"
     check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
     cases = load_dataset(datasets, split)
     settings = get_settings()
-    out = REPO_ROOT / "eval" / "reports" / f"e2e-{split}-{mode}.jsonl"
+    out = REPO_ROOT / "eval" / "reports" / f"e2e-{split}-{mode}{'-' + tag if tag else ''}.jsonl"
     if fresh:
         for f in (out, out.with_suffix(".meta.json")):
             f.unlink(missing_ok=True)
@@ -355,10 +382,47 @@ def eval_e2e(
     typer.echo(f"report: {out.with_suffix('.md')}")
 
 
+@app.command("eval-llm-errors")
+def eval_llm_errors(
+    split: str = typer.Option("test", help="dev | test | holdout"),
+    tag: str | None = typer.Option(None, help="Suffix for the output name."),
+) -> None:
+    """LLM error analysis: rerun the report-writing cases in llm mode, keep the drafts, classify each rejection.
+    Writes eval/reports/llm-errors-<split>[-tag].{jsonl,md}."""
+    from datetime import date
+
+    from copilot.api import default_deps
+    from copilot.auth import issue_token, verify_token
+    from copilot.eval.dataset import check_anchor, load_dataset
+    from copilot.eval.llm_errors import render_errors_report, run_analysis, summarize_errors
+
+    datasets = REPO_ROOT / "eval" / "datasets"
+    check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
+    cases = load_dataset(datasets, split)
+    settings = get_settings()
+    out = REPO_ROOT / "eval" / "reports" / f"llm-errors-{split}{'-' + tag if tag else ''}.jsonl"
+
+    def principal_for(case):
+        return verify_token(issue_token(case.tenant, "eval-runner", settings.jwt_secret), settings.jwt_secret)
+
+    rows = run_analysis(cases, default_deps(), principal_for, out)
+    summary = summarize_errors(rows)
+    categories = ", ".join(sorted({r["category"] for r in rows}))
+    notes = [f"Every case of the split that expects a written report ({categories}), run once in llm mode "
+             "with the drafts kept. Classes come from the verifier message plus the draft that produced it "
+             "(copilot/eval/llm_errors.py).", f"Code {_fingerprint(split, 'llm', settings)['code']}."]
+    notes += llm_notes(settings.llm_model, settings.retrieval_strategy)
+    title = f"LLM error analysis — {split} split ({date.today()})"
+    out.with_suffix(".md").write_text(render_errors_report(summary, rows, title, notes), encoding="utf-8")
+    typer.echo(f"{summary['ok']}/{summary['cases']} verified, {summary['degraded']} degraded; "
+               f"rejections {summary['rejections']}")
+    typer.echo(f"report: {out.with_suffix('.md')}")
+
+
 @app.command("eval-compare")
 def eval_compare(
-    split: str = typer.Option("test", help="dev | test"),
-    modes: str = typer.Option("template,llm,agent", help="Comma-separated modes, in column order."),
+    split: str = typer.Option("test", help="dev | test | holdout"),
+    modes: str = typer.Option("template,llm,agent", help="Comma-separated modes (or mode-tag), in column order."),
     reports_dir: Path | None = typer.Option(None, help="Where e2e-<split>-<mode>.jsonl live (default eval/reports)."),
 ) -> None:
     """Print one comparison table over saved end-to-end results (no new runs)."""
@@ -371,6 +435,87 @@ def eval_compare(
         if not rows:
             typer.echo(f"{mode}: no results in {base}")
             continue
-        summaries[mode] = summarize(rows, mode)
+        summaries[mode] = summarize(rows, mode.split("-", 1)[0])  # "agent-v2" is an agent run
     if summaries:
         typer.echo(render_comparison(summaries))
+
+
+@app.command()
+def bench(
+    modes: str = typer.Option("template,llm", help="Comma-separated modes for the steady-state phase."),
+    requests: int = typer.Option(40, help="Requests per steady-state phase."),
+    chaos: str = typer.Option("data-svc,postgres", help="Compose services to stop and restart (template mode); "
+                              "'' for none."),
+    outage_requests: int = typer.Option(10, help="Requests while a service is stopped."),
+    recovery_requests: int = typer.Option(30, help="Requests after it is started again."),
+) -> None:
+    """Operational metrics against the live stack: latency percentiles, error rate, tokens, memory, and recovery
+    after stopping a dependency. Writes eval/reports/<date>-ops-metrics.md (and .json)."""
+    import json
+    import subprocess
+    from datetime import date
+
+    from fastapi.testclient import TestClient
+
+    from copilot.api import create_app
+    from copilot.auth import issue_token
+    from copilot.eval.bench import (
+        container_memory,
+        gpu_memory,
+        process_memory_mb,
+        render_bench,
+        run_bench,
+        summarize_run,
+    )
+    from copilot.eval.dataset import check_anchor, load_dataset
+
+    settings = get_settings()
+    datasets = REPO_ROOT / "eval" / "datasets"
+    check_anchor(datasets, REPO_ROOT / "data" / "simgen_run.json")
+    cases = load_dataset(datasets, "dev")
+    full = [c for c in cases if c.expected_status == "ok" and c.category == "normal"]
+    short = [c for c in cases if c.expected_status != "ok"]
+    mix = [x for pair in zip(full, full[1:] + full[:1], short, strict=False) for x in pair]  # 2 full : 1 short
+    questions = [{"id": c.id, "question": c.question, "as_of": c.as_of, "tenant": c.tenant,
+                  "asset_id": c.request_asset_id, "alarm_id": c.request_alarm_id} for c in mix]
+    client = TestClient(create_app(), raise_server_exceptions=False)
+    tokens = {t: issue_token(t, "bench", settings.jwt_secret) for t in {q["tenant"] for q in questions}}
+
+    def post(body: dict):
+        tenant = body.pop("_tenant")
+        return client.post("/investigate", json=body, headers={"Authorization": f"Bearer {tokens[tenant]}"})
+
+    def memory() -> dict:
+        rss, peak = process_memory_mb()
+        return {"rss_mib": rss, "peak_mib": peak, "gpu": gpu_memory(settings.ollama_url),
+                "containers": container_memory(REPO_ROOT)}
+
+    def compose(verb: str, service: str):
+        def action() -> str:
+            subprocess.run(["docker", "compose", verb, service], cwd=REPO_ROOT, check=True, capture_output=True)
+            return f"{'stopped' if verb == 'stop' else 'started'} {service}"
+        return action
+
+    summaries = []
+    for mode in [m.strip() for m in modes.split(",") if m.strip()]:
+        phases = [("warm-up", 3, None), ("steady", requests, None)]
+        if mode == "template":
+            for service in [s.strip() for s in chaos.split(",") if s.strip()]:
+                phases += [(f"{service} stopped", outage_requests, compose("stop", service)),
+                           (f"{service} restarted", recovery_requests, compose("start", service))]
+        typer.echo(f"{mode}: {sum(n for _, n, _ in phases)} requests ...")
+        summaries.append(summarize_run(run_bench(post, questions, mode, phases, memory)))
+    notes = ["Requests go through the FastAPI app in-process (TestClient), one at a time (one GPU), against the "
+             "live data-svc, Postgres and Ollama. Questions: dev-split normal cases and short-circuit cases "
+             "(clarification / no evidence), 2 : 1, cycled in a fixed order; the warm-up phase loads the models.",
+             "Chaos phases run in template mode: `docker compose stop <service>`, requests, `docker compose start "
+             "<service>`, requests sent back to back until the end of the phase. 'Seconds to first success' is "
+             "measured from the moment `docker compose start` returned.",
+             "Memory: working set of the process running ai-svc (peak since start) via the OS, GPU from nvidia-smi, "
+             "VRAM per model from Ollama /api/ps, containers from `docker stats` after the run."]
+    notes += llm_notes(settings.llm_model, settings.retrieval_strategy)
+    out = REPO_ROOT / "eval" / "reports" / f"{date.today()}-ops-metrics"
+    out.with_suffix(".json").write_text(json.dumps(summaries, indent=2) + "\n", encoding="utf-8")
+    out.with_suffix(".md").write_text(render_bench(summaries, notes, f"Operational metrics ({date.today()})"),
+                                      encoding="utf-8")
+    typer.echo(f"report: {out.with_suffix('.md')}")

@@ -105,7 +105,7 @@ func Open(ctx context.Context, dsn string) (*Store, error) {
 	return &Store{pool: pool}, nil
 }
 
-func (s *Store) Close()               { s.pool.Close() }
+func (s *Store) Close()              { s.pool.Close() }
 func (s *Store) Pool() *pgxpool.Pool { return s.pool }
 
 // CheckNotPrivileged fails when the connected role could bypass row-level security.

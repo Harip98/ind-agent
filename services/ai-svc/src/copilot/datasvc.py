@@ -1,6 +1,7 @@
 """Typed client for data-svc. Always forwards the end user's token; never holds its own."""
 
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -101,6 +102,45 @@ def _ts(value: str | None) -> datetime | None:
     return None if value is None else datetime.fromisoformat(value).astimezone(UTC)
 
 
+# Leaf checks for data-svc bodies. A wrong type raises TypeError inside `_malformed`, so it becomes a 503
+# data_unavailable here instead of a crash in numpy or datetime code later. No coercion: "41.2" is malformed.
+def _num(value) -> float | None:
+    if value is None or (isinstance(value, (int, float)) and not isinstance(value, bool)):
+        return value
+    raise TypeError(f"expected a number, got {type(value).__name__}")
+
+
+def _int(value) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    raise TypeError(f"expected an integer, got {type(value).__name__}")
+
+
+def _req_ts(value) -> datetime:
+    if not isinstance(value, str):
+        raise TypeError(f"expected a timestamp string, got {type(value).__name__}")
+    return _ts(value)
+
+
+def _tags(value) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(isinstance(t, str) for t in value):
+        raise TypeError("expected a list of tags")
+    return tuple(value)
+
+
+@contextmanager
+def _malformed(what: str):
+    """A 200 whose body lacks fields or has the wrong types is an upstream fault, not a crash."""
+    try:
+        yield
+    except DataServiceError:
+        raise
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise DataServiceError(f"data-svc sent a malformed {what} response: {type(exc).__name__}") from exc
+
+
 class DataServiceClient:
     def __init__(self, base_url: str, token: str, trace_id: str, timeout: float = 15.0,
                  transport: httpx.BaseTransport | None = None) -> None:
@@ -131,35 +171,52 @@ class DataServiceClient:
             raise Rejected(f"data-svc rejected {path}: {code}")
         if response.status_code != 200:
             raise DataServiceError(f"data-svc returned {response.status_code} for {path}")
-        return response.json()
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise DataServiceError(f"data-svc sent a body that is not JSON for {path}") from exc
 
     def assets(self) -> tuple[TenantInfo, list[AssetInfo]]:
+        with _malformed("/v1/assets"):
+            return self._assets()
+
+    def alarms(self, asset_id: str, start: datetime, end: datetime) -> tuple[list[AlarmInfo], bool]:
+        with _malformed("alarms"):
+            return self._alarms(asset_id, start, end)
+
+    def window(self, asset_id: str, tag: str, start: datetime, end: datetime) -> SensorWindow:
+        with _malformed("window"):
+            return self._window(asset_id, tag, start, end)
+
+    def _assets(self) -> tuple[TenantInfo, list[AssetInfo]]:
         body = self._get("/v1/assets")
         tenant = TenantInfo(**body["tenant"])
         assets = [
             AssetInfo(a["id"], a["name"], a["model"], a["site"], tuple(
-                SensorInfo(s["tag"], s["kind"], s["description"], s["unit"], s["lo_limit"],
-                           s["hi_limit"], tuple(s["related_tags"] or ()))
+                SensorInfo(s["tag"], s["kind"], s["description"], s["unit"], _num(s["lo_limit"]),
+                           _num(s["hi_limit"]), _tags(s["related_tags"]))
                 for s in a["sensors"] or ()))
             for a in body["assets"]
         ]
         return tenant, assets
 
-    def alarms(self, asset_id: str, start: datetime, end: datetime) -> tuple[list[AlarmInfo], bool]:
+    def _alarms(self, asset_id: str, start: datetime, end: datetime) -> tuple[list[AlarmInfo], bool]:
         body = self._get(f"/v1/assets/{asset_id}/alarms", {"from": fmt_ts(start), "to": fmt_ts(end)})
         alarms = [
             AlarmInfo(a["id"], a["asset_id"], a["tag"], a["alarm_type"], a["severity"],
-                      _ts(a["raised_at"]), _ts(a["cleared_at"]), a["value"], a["limit_value"], a["message"])
+                      _req_ts(a["raised_at"]), _ts(a["cleared_at"]), _num(a["value"]), _num(a["limit_value"]),
+                      a["message"])
             for a in body["alarms"]
         ]
         return alarms, bool(body["truncated"])
 
-    def window(self, asset_id: str, tag: str, start: datetime, end: datetime) -> SensorWindow:
+    def _window(self, asset_id: str, tag: str, start: datetime, end: datetime) -> SensorWindow:
         body = self._get(f"/v1/assets/{asset_id}/sensors/{tag}/window",
                          {"from": fmt_ts(start), "to": fmt_ts(end)})
         return SensorWindow(
-            body["asset_id"], body["tag"], body["unit"], _ts(body["from"]), _ts(body["to"]),
-            body["resolution_seconds"],
-            tuple(WindowPoint(_ts(p["ts"]), p["avg"], p["min"], p["max"], p["n"], p["bad"])
+            body["asset_id"], body["tag"], body["unit"], _req_ts(body["from"]), _req_ts(body["to"]),
+            _int(body["resolution_seconds"]),
+            tuple(WindowPoint(_req_ts(p["ts"]), _num(p["avg"]), _num(p["min"]), _num(p["max"]), _int(p["n"]),
+                              _int(p["bad"]))
                   for p in body["points"]),
         )

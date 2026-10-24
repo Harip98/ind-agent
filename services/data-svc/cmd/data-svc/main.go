@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,7 +26,33 @@ func getenv(key, def string) string {
 	return def
 }
 
+// healthURL is the loopback /healthz URL for a listen address such as ":8081" or "0.0.0.0:8081".
+func healthURL(addr string) string {
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		port = "8081"
+	}
+	return "http://127.0.0.1:" + port + "/healthz"
+}
+
+// healthcheck backs the container HEALTHCHECK: the distroless image has no shell or curl.
+func healthcheck(url string) int {
+	client := http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return 1
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "-healthcheck" {
+		os.Exit(healthcheck(healthURL(getenv("DATASVC_ADDR", ":8081"))))
+	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	if err := run(logger); err != nil {
 		logger.Error("data-svc stopped", "err", err)

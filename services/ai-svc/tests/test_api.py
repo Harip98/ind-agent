@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from test_pipeline import FakeDataSvc, FakeRetriever
 
-from copilot.api import WEB_DIR, create_app
+from copilot.api import WEB_DIR, create_app, default_gateways
 from copilot.auth import issue_token
 from copilot.causes import load_signatures
 from copilot.config import Settings
@@ -107,10 +107,12 @@ def test_dev_endpoints_disabled_by_default(sim):
     assert c.post("/dev/token", json={"tenant": "acme"}).status_code == 404
 
 
-def _dev_client(sim, host="127.0.0.1", client_ip="127.0.0.1"):
+def _dev_client(sim, host="127.0.0.1", client_ip="127.0.0.1", docker=False):
     deps = PipelineDeps(datasvc=lambda p, t: FakeDataSvc(sim, p.tenant_id), retriever=FakeRetriever(), llm=None,
                         signatures=load_signatures(), settings=Settings())
-    return TestClient(create_app(lambda: deps, dev=True), base_url=f"http://{host}", client=(client_ip, 50000))
+    return TestClient(create_app(lambda: deps, dev=True, dev_docker=docker,
+                                 gateways=lambda: frozenset({"172.18.0.1"})),
+                      base_url=f"http://{host}", client=(client_ip, 50000))
 
 
 def test_dev_endpoints_in_dev_mode(sim):
@@ -136,6 +138,57 @@ def test_dev_mode_cannot_be_enabled_by_environment(sim, monkeypatch):
 def test_dev_endpoints_refuse_non_loopback_clients_and_foreign_hosts(sim):
     assert _dev_client(sim, client_ip="192.168.1.20").post("/dev/token", json={"tenant": "acme"}).status_code == 404
     assert _dev_client(sim, host="attacker.example").post("/dev/token", json={"tenant": "acme"}).status_code == 400
+
+
+@pytest.mark.parametrize("client_ip, code", [
+    ("172.18.0.1", 200),    # the Docker gateway: the host, through the port published on 127.0.0.1
+    ("127.0.0.1", 200),
+    ("172.18.0.5", 404),    # another container on the network
+    ("192.168.1.20", 404),  # a LAN peer that found a route to the container
+    ("8.8.8.8", 404),
+])
+def test_dev_docker_trusts_only_the_docker_gateway(sim, client_ip, code):
+    c = _dev_client(sim, client_ip=client_ip, docker=True)
+    assert c.post("/dev/token", json={"tenant": "acme"}).status_code == code
+
+
+def test_dev_docker_still_refuses_foreign_host_headers(sim):
+    assert _dev_client(sim, host="attacker.example", client_ip="172.18.0.1", docker=True).post(
+        "/dev/token", json={"tenant": "acme"}).status_code == 400
+
+
+def test_default_gateways_reads_the_linux_routing_table(tmp_path):
+    routes = tmp_path / "route"
+    rows = [["Iface", "Destination", "Gateway", "Flags"],
+            ["eth0", "00000000", "010012AC", "0003"],  # default route via 172.18.0.1 (little-endian hex)
+            ["eth0", "000012AC", "00000000", "0001"]]  # the local network, no gateway
+    routes.write_text("".join("\t".join(r) + "\n" for r in rows), encoding="ascii")
+    assert default_gateways(routes) == frozenset({"172.18.0.1"})
+    assert default_gateways(tmp_path / "missing") == frozenset()
+
+
+def _ok(**kw):
+    return {"data_svc": {"ok": True}, "knowledge_base": {"ok": True},
+            "ollama": {"ok": True, "llm_model": True, "embed_model": True}} | kw
+
+
+@pytest.mark.parametrize("checks,code,status,modes,retrieval", [
+    (_ok(), 200, "ready", ["llm", "template", "agent"], "hybrid"),
+    (_ok(ollama={"ok": False, "error": "ConnectError"}), 200, "degraded", ["template"], "keyword_only"),
+    (_ok(ollama={"ok": True, "llm_model": False, "embed_model": True}), 200, "degraded", ["template"], "hybrid"),
+    # no embedding model: retrieval falls back to keywords, but every mode still answers
+    (_ok(ollama={"ok": True, "llm_model": True, "embed_model": False}), 200, "degraded",
+     ["llm", "template", "agent"], "keyword_only"),
+    (_ok(data_svc={"ok": False, "error": "ConnectError"}), 503, "unavailable", [], None),
+    (_ok(knowledge_base={"ok": False, "error": "OperationalError"}), 503, "unavailable", [], None),
+])
+def test_readyz_reports_which_modes_work(sim, checks, code, status, modes, retrieval):
+    deps = PipelineDeps(datasvc=lambda p, t: FakeDataSvc(sim, p.tenant_id), retriever=FakeRetriever(), llm=None,
+                        signatures=load_signatures(), settings=Settings())
+    r = TestClient(create_app(lambda: deps, checks=lambda: checks)).get("/readyz")
+    assert r.status_code == code
+    body = r.json()
+    assert (body["status"], body["modes"], body["retrieval"], body["checks"]) == (status, modes, retrieval, checks)
 
 
 def test_security_headers_and_no_third_party_assets(sim):

@@ -1,5 +1,6 @@
 """Runtime settings, read from COPILOT_* environment variables and the repo-root .env."""
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -8,7 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def find_repo_root(start: Path | None = None) -> Path:
-    """Walk up from `start` to the directory holding docker-compose.yml."""
+    """COPILOT_REPO_ROOT (set in the container image), else walk up from `start` to docker-compose.yml."""
+    if start is None and (env := os.environ.get("COPILOT_REPO_ROOT")):
+        return Path(env).resolve()
     here = (start or Path(__file__)).resolve()
     for candidate in (here, *here.parents):
         if (candidate / "docker-compose.yml").is_file():
@@ -36,7 +39,8 @@ class Settings(BaseSettings):
     kb_writer_password: str = "kb_writer_dev_pw"
     jwt_secret: str = "dev-only-secret-change-me-0123456789abcdef"
     ollama_url: str = "http://127.0.0.1:11434"
-    ollama_timeout_s: float = 60.0
+    ollama_timeout_s: float = 60.0  # ingest: embedding a whole corpus
+    embed_timeout_s: float = 15.0  # one query embedding; enough for a cold model load on the 4 GB GPU
     embed_model: str = "nomic-embed-text"
     reranker_model: str = "BAAI/bge-reranker-base"
     llm_model: str = "qwen2.5:3b-instruct"  # fits the 4 GB GPU; the 7B spills into RAM

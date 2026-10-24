@@ -1,5 +1,6 @@
 """Tenant-scoped retrieval over kb.chunks: vector, hybrid (FTS + vector, RRF) and reranked."""
 
+import time
 from dataclasses import dataclass, replace
 
 import psycopg
@@ -15,6 +16,17 @@ from copilot.retrieval.rerank import Reranker
 
 STRATEGIES = ("vector", "hybrid", "hybrid_rerank")
 CANDIDATES = 20
+# After a failed query embedding, skip embeddings for this long: one investigation runs three searches, and a
+# hung Ollama would otherwise cost a full timeout on each of them.
+EMBED_BACKOFF_S = 30.0
+
+
+class KnowledgeBaseUnavailable(RuntimeError):
+    """The knowledge-base database cannot be reached."""
+
+
+class StrategyUnavailable(ValueError):
+    """The requested retrieval strategy is not installed here (hybrid_rerank without the `rerank` group)."""
 
 
 @dataclass(frozen=True)
@@ -68,6 +80,19 @@ LIMIT %(n)s
 class Retriever:
     def __init__(self, settings: Settings, embedder: Embedder, reranker: Reranker | None = None) -> None:
         self._settings, self._embedder, self._reranker = settings, embedder, reranker
+        self._embed_down_until = 0.0
+
+    def _query_vector(self, query: str) -> str | None:
+        """The query embedding, or None (keyword search only) when Ollama fails or failed moments ago."""
+        if time.monotonic() < self._embed_down_until:
+            return None
+        try:
+            return to_pgvector(self._embedder.embed_query(query))
+        except OllamaError as exc:
+            self._embed_down_until = time.monotonic() + EMBED_BACKOFF_S
+            get_logger().warning("embeddings unavailable; keyword search only",
+                                 extra={"fields": {"err": str(exc)}})
+            return None
 
     def search(
         self,
@@ -80,20 +105,18 @@ class Retriever:
         if strategy not in STRATEGIES:
             raise ValueError(f"unknown strategy {strategy!r}")
         if strategy == "hybrid_rerank" and self._reranker is None:
-            raise ValueError("hybrid_rerank needs a reranker")
+            raise StrategyUnavailable("strategy hybrid_rerank is not installed here (uv sync --group rerank)")
         params = {"shared": SHARED, "tenant": tenant_id, "model": asset_model, "n": CANDIDATES}
-        try:  # embed before opening the transaction; Ollama can be slow
-            qvec = to_pgvector(self._embedder.embed_query(query))
-        except OllamaError as exc:
-            get_logger().warning("embeddings unavailable; keyword search only",
-                                 extra={"fields": {"err": str(exc)}})
-            qvec = None
-        with psycopg.connect(self._settings.dsn("kb_reader"), row_factory=dict_row) as conn:
-            conn.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant_id,))
-            vector = self._vector(conn, params, qvec) if qvec else []
-            if strategy == "vector" and qvec:
-                return select_hits(vector, k)
-            fused = self._fuse(vector, self._fulltext(conn, params, query))
+        qvec = self._query_vector(query)  # before opening the transaction; Ollama can be slow
+        try:
+            with psycopg.connect(self._settings.dsn("kb_reader"), row_factory=dict_row) as conn:
+                conn.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant_id,))
+                vector = self._vector(conn, params, qvec) if qvec else []
+                if strategy == "vector" and qvec:
+                    return select_hits(vector, k)
+                fused = self._fuse(vector, self._fulltext(conn, params, query))
+        except psycopg.OperationalError as exc:
+            raise KnowledgeBaseUnavailable(str(exc)) from exc
         if strategy in ("hybrid", "vector"):
             return select_hits(fused, k)
         scores = self._reranker.score(query, [h.content for h in fused])
