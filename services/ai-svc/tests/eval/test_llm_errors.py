@@ -55,6 +55,7 @@ def test_other_messages_map_to_their_classes():
         == "unsafe_or_injected"
     assert classify("explanation 1: unknown ref O9", d) == "unknown_ref"
     assert classify("explanations must include the top candidate X", d) == "cause_structure"
+    assert classify("explanation 1: write in English only; the text switches to another language", d) == "foreign_script"
 
 
 def test_recording_llm_keeps_parsed_and_unparsed_drafts():

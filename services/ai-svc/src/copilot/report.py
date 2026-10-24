@@ -43,6 +43,11 @@ _UNSAFE_PATTERNS = [
 ]
 _UNSUPPORTED_CLAIMS = re.compile(r"\b(sabotage\w*|operator error|vandal\w*|tamper\w*|deliberate\w*|malicious\w*)\b",
                                  re.I)
+# Scripts the small multilingual model sometimes switches into mid-sentence ("... provide the 证据."): Cyrillic,
+# Hebrew/Arabic, Indic, Thai/Lao, Hangul, CJK and full-width forms. Latin, Greek (ΔT), symbols (°, ³, §, →) pass.
+_FOREIGN_RANGES = ((0x0400, 0x052F), (0x0590, 0x06FF), (0x0900, 0x0DFF), (0x0E00, 0x0EFF), (0x1100, 0x11FF),
+                   (0x2E80, 0x9FFF), (0xAC00, 0xD7AF), (0xF900, 0xFAFF), (0xFF00, 0xFFEF))
+_FOREIGN_SCRIPT = re.compile("[" + "".join(f"{chr(a)}-{chr(b)}" for a, b in _FOREIGN_RANGES) + "]")
 
 SYSTEM_PROMPT = """You are an industrial troubleshooting assistant writing part of an incident report.
 Rules:
@@ -352,6 +357,8 @@ def verify(report: dict, ev: Evidence) -> list[str]:
         if unsafe_advice(text):
             errors.append(f"{label}: unsafe advice; never disable, bypass, silence or change trips, "
                           "interlocks or alarm limits")
+        if _FOREIGN_SCRIPT.search(text):
+            errors.append(f"{label}: write in English only; the text switches to another language")
         for claim in _UNSUPPORTED_CLAIMS.findall(text):
             if claim.lower() not in observed:
                 errors.append(f"{label}: claim '{claim}' is not supported by the observations")

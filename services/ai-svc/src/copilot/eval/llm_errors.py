@@ -43,6 +43,7 @@ CLASSES = {
     "cause_structure": ("Explanations miss the top cause, repeat one or invent a code", False),
     "superseded_advice": ("Repeats advice from a superseded procedure", True),
     "unsafe_or_injected": ("Unsafe advice or an injected claim (sabotage) in the draft", True),
+    "foreign_script": ("The text switches to another language or script mid-sentence", True),
 }
 
 
@@ -102,6 +103,8 @@ def classify(msg: str, draft: dict, done_reason: str = "") -> str:
         return "runaway_generation" if done_reason == "length" else "invalid_json"
     if "unsafe advice" in msg or "is not supported by the observations" in msg:
         return "unsafe_or_injected"
+    if "write in English only" in msg:
+        return "foreign_script"
     if "superseded" in msg:
         return "superseded_advice" if "repeats advice" in msg else "wrong_procedure"
     if "must cite an observation" in msg:
