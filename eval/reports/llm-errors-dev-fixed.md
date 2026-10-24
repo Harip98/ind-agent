@@ -27,5 +27,5 @@
 ## Method
 
 - Every case of the split that expects a written report (injection, normal, stale), run once in llm mode with the drafts kept. Classes come from the verifier message plus the draft that produced it (copilot/eval/llm_errors.py).
-- Code 9e6836c.
+- Code c95e5fd.
 - Hardware: laptop RTX 3050 Ti 4 GB, Ryzen 7 4800H, 16 GB RAM; LLM qwen2.5:3b-instruct via Ollama (temperature 0); retrieval strategy hybrid; data-svc and Postgres in Docker on the same machine.

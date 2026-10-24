@@ -52,7 +52,7 @@ All in [report.py](../../services/ai-svc/src/copilot/report.py) and [llm.py](../
 
 ## After the fixes
 
-Same model, temperature 0, same 60 frozen test questions, code `4ca0111`:
+Same model, temperature 0, same 60 frozen test questions, code `8c699de`:
 
 | Pipeline, qwen2.5:3b | Before ([e2e-test-llm.md](e2e-test-llm.md)) | After ([e2e-test-llm-v2.md](e2e-test-llm-v2.md)) |
 |---|---|---|

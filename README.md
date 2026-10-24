@@ -135,7 +135,7 @@ Scenarios: [docs/use-cases.md](docs/use-cases.md). Every requirement with its ve
 
 ## Results
 
-The frozen test split has 60 questions from 5 incidents. It also includes missing-evidence, stale-procedure, other-plant, ambiguous and prompt-injection cases. Its SHA-256 is recorded and it was never used for tuning; tuning used a separate dev split of 112 questions. Scoring is deterministic (status, cause codes, cited documents), with no LLM judge. All runs below: 2026-10-24, commit `4ca0111`.
+The frozen test split has 60 questions from 5 incidents. It also includes missing-evidence, stale-procedure, other-plant, ambiguous and prompt-injection cases. Its SHA-256 is recorded and it was never used for tuning; tuning used a separate dev split of 112 questions. Scoring is deterministic (status, cause codes, cited documents), with no LLM judge. All runs below: 2026-10-24, commit `8c699de`.
 
 | Test split (60 questions) | Evidence only | Pipeline, qwen2.5:3b (default) | Agent, qwen2.5:3b |
 |---|---|---|---|
